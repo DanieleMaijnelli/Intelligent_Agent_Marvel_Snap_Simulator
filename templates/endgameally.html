@@ -2,68 +2,86 @@
 <html>
 <head>
     <title>End of game!</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='gameStyle.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='gameStyle.css') }}">
 </head>
 <body>
-    <h1> Locations </h1>
-    <h1>
-        Game over!
-        {% if passStatus['winner'] == 'Enemy' %}
-          You have lost {{ status['cubes'] * 2 }} cubes!
-        {% elif passStatus['winner'] == 'Ally' %}
-          You have won {{ status['cubes'] * 2 }} cubes!
-        {% elif passStatus['winner'] == 'Tie' %}
-          Tie!
+<h1> Locations </h1>
+<h1>
+    Game over!
+    {% set is_retreat = passStatus.get('retreatally') or passStatus.get('retreatenemy') %}
+
+    {% if passStatus['winner'] == 'Enemy' %}
+        {% if is_retreat %}
+            You have lost {{ passStatus['cubes'] | int }} cubes!
+        {% else %}
+            You have lost {{ (status['cubes'] * 2) | int }} cubes!
         {% endif %}
-      </h1>
-    <div class="locationlist">
-        {% for location in locations %}
-        <div class="location {{ 'winning' if location.winning == 'Ally' else 'losing' if location.winning == 'Enemy' else 'tie'}}">
-        <h2>{{ location.name }}</h2>
-    
-        <!-- Sezione Nemici -->
-        <div class="enemies">
-            <h3>Enemies</h3>
-            {% for enemy_card in location.enemies %}
-            <div class="cardinlocation">
-                <img src="{{ enemy_card.render() }}" alt="{{ enemy_card.name }}" class="card img">
-                <p class= "cardtext">{{ enemy_card.name }} - Power: {{ enemy_card.cur_power }}</p>
-                <p class = "cardtext"> {{ enemy_card.description }}</p>
+
+    {% elif passStatus['winner'] == 'Ally' %}
+        {% if is_retreat %}
+            You have won {{ passStatus['cubes'] | int }} cubes!
+        {% else %}
+            You have won {{ (status['cubes'] * 2) | int }} cubes!
+        {% endif %}
+
+    {% elif passStatus['winner'] == 'Tie' %}
+        {% if is_retreat %}
+            It's a tie after retreat! Nobody wins or loses cubes.
+        {% else %}
+            Tie! No cubes won or lost.
+        {% endif %}
+    {% endif %}
+</h1>
+<div class="locationlist">
+    {% for location in locations %}
+        <div class="location
+                {{ 'winning' if location.winning == 'Ally' else 'losing' if location.winning == 'Enemy' else 'tie'}}">
+            <h2>{{ location.name }}</h2>
+
+            <!-- Sezione Nemici -->
+            <div class="enemies">
+                <h3>Enemies</h3>
+                {% for enemy_card in location.enemies %}
+                    <div class="cardinlocation">
+                        <img src="{{ enemy_card.render() }}" alt="{{ enemy_card.name }}" class="card img">
+                        <p class="cardtext">{{ enemy_card.name }} - Power: {{ enemy_card.cur_power }}</p>
+                        <p class="cardtext"> {{ enemy_card.description }}</p>
+                    </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
-        <div> 
-            <p class="totalpower"> Enemies Power: {{ location.enemiesPower }} <br> </p>
-            <p class = "locationdescription">{{location.description}} <br> </p>
-            <p class = "totalpower"> Allies Power: {{ location.alliesPower }}</p>
-        </div>
-        <!-- Sezione Alleati -->
+            <div>
+                <p class="totalpower"> Enemies Power: {{ location.enemiesPower }} <br></p>
+                <p class="locationdescription">{{ location.description }} <br></p>
+                <p class="totalpower"> Allies Power: {{ location.alliesPower }}</p>
+            </div>
+            <!-- Sezione Alleati -->
             <div class="allies">
-            <h3>Allies</h3>
-            {% for ally_card in location.allies%}
-                {% if ally_card not in location.cards_to_move %}
-                <div class="cardinlocation">
-                    <img src="{{ ally_card.render() }}" alt="{{ ally_card.name }}" class = "card img">
-                    <p class = "cardtext">{{ ally_card.name }} - Power: {{ ally_card.cur_power }}</p>
-                    <p class = "cardtext"> {{ ally_card.description }}</p>
-                </div>
-                {% endif %}
-            {% endfor %}
+                <h3>Allies</h3>
+                {% for ally_card in location.allies %}
+                    {% if ally_card not in location.cards_to_move %}
+                        <div class="cardinlocation">
+                            <img src="{{ ally_card.render() }}" alt="{{ ally_card.name }}" class="card img">
+                            <p class="cardtext">{{ ally_card.name }} - Power: {{ ally_card.cur_power }}</p>
+                            <p class="cardtext"> {{ ally_card.description }}</p>
+                        </div>
+                    {% endif %}
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
-    </div>
-    <h1>Your Cards</h1>
-    <div class="hand-container">
-        {% for card in status["allyhand"] %}
+    {% endfor %}
+</div>
+<h1>Your Cards</h1>
+<div class="hand-container">
+    {% for card in status["allyhand"] %}
         <div class="card">
-                <input type="hidden" name="index" value="{{ loop.index0 }}">
-                <img src="{{ card.render() }}" alt="{{ card.name }}">
-                <p>{{card.name}}: {{card.cur_cost}}, Power: {{card.cur_power}}, Description: {{card.description}}</p>
+            <input type="hidden" name="index" value="{{ loop.index0 }}">
+            <img src="{{ card.render() }}" alt="{{ card.name }}">
+            <p>{{ card.name }}: {{ card.cur_cost }}, Power: {{ card.cur_power }},
+                Description: {{ card.description }}</p>
         </div>
-        {% endfor %}
-    </div>
-    
+    {% endfor %}
+</div>
+
 
 </body>
 </html>
