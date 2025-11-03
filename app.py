@@ -217,16 +217,13 @@ def snap(allyorenemy):
         return redirect(url_for('gameEnemy'))
 
 
-'''@app.route("/game/<allyorenemy>/retreat", methods=['POST'])
-def retreat(allyorenemy):
-    if allyorenemy == "ally":
-        game.passStatus['retreatally'] = True
-        game.passStatus['turnpassally'] = True
-        return redirect(url_for('gameAlly'))
-    elif allyorenemy == "enemy":
-        game.passStatus['retreatenemy'] = True
-        game.passStatus['turnpassenemy'] = True
-        return redirect(url_for('gameEnemy'))'''
+@app.route('/check_snap')
+def check_snap():
+    return {
+        "allysnapped": bool(game.status.get("allysnapped")),
+        "enemysnapped": bool(game.status.get("enemysnapped"))
+    }
+
 
 @app.route("/game/<allyorenemy>/retreat", methods=['POST'])
 def retreat(allyorenemy):
@@ -238,14 +235,13 @@ def retreat(allyorenemy):
         game.passStatus['retreatenemy'] = True
         game.passStatus['winner'] = "Ally"
 
-    if(game.passStatus['retreatally'] and game.passStatus['retreatenemy']):
+    if (game.passStatus['retreatally'] and game.passStatus['retreatenemy']):
         game.passStatus['winner'] = "Tie"
     # Esponi i cubes finali nel payload usato dal template
     game.passStatus['cubes'] = game.status['cubes']
 
     # Vai direttamente alla pagina di endgame (così nulla ti sovrascrive lo stato)
     return redirect(url_for('endGame', allyorenemy=allyorenemy))
-
 
 
 @app.route("/game/<allyorenemy>/movecard", methods=['POST'])

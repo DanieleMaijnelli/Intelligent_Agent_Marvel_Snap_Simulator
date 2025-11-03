@@ -12,31 +12,47 @@
             document.querySelectorAll("form").forEach(form => form.onsubmit = (e) => e.preventDefault());
         }
 
+        function checkSnapStatus() {
+            fetch('/check_snap')
+                .then(response => response.json())
+                .then(data => {
+                    // Se l'avversario ha snappato, mostra la scritta
+                    if (data.enemysnapped) {
+                        document.getElementById('snapNotice').style.display = 'block';
+                    }
+                })
+                .finally(() => {
+                    setTimeout(checkSnapStatus, 2000); // continua a controllare
+                });
+        }
+
+
         function checkGameEnded() {
             if (gameEnded) return;
-        
-            fetch('/check_game_end')  
-            .then(response => response.json())
-            .then(data => {
-                console.log(data)
-                if (data !== "None") {
-                    alert("Game ended!");
-                    gameEnded = true;
-                    disableAllInteractions();
-                    window.location.href = "/game/ally/endgame";  
-                } else {
-                    setTimeout(checkGameEnded, 3000);
-                }
-            });
-    }
-            
 
-        window.onload = function() {
+            fetch('/check_game_end')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data)
+                    if (data !== "None") {
+                        alert("Game ended!");
+                        gameEnded = true;
+                        disableAllInteractions();
+                        window.location.href = "/game/ally/endgame";
+                    } else {
+                        setTimeout(checkGameEnded, 3000);
+                    }
+                });
+        }
+
+
+        window.onload = function () {
             checkGameEnded();
+            checkSnapStatus();
         }
 
         function endTurn() {
-            fetch('/game/ally/pass', { method: 'POST' })
+            fetch('/game/ally/pass', {method: 'POST'})
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -45,15 +61,15 @@
                     }
                 });
         }
-    
+
         function checkTurnStatus() {
             if (!hasPassed) return;
-    
+
             fetch('/check_turn/ally')
                 .then(response => response.json())
                 .then(data => {
                     if (data.turnend) {
-                        fetch('/game/startofturn', { method: 'GET' });
+                        fetch('/game/startofturn', {method: 'GET'});
                         setTimeout(reloadPage, 2000);
                     } else if (data.turnpassally) {
                         console.log("turnpassally");
@@ -64,100 +80,113 @@
                     }
                 });
         }
+
         function reloadPage() {
             location.reload();
         }
     </script>
-<link rel="stylesheet" href="{{ url_for('static', filename='gameStyle.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='gameStyle.css') }}">
 </head>
 <body>
-    <h1> Locations </h1>
-    <h1> Turn: {{ status["turncounter"] }}   </h1>
-    <div class="locationlist">
-        {% for location in locations %}
+<h1> Locations </h1>
+<h1> Turn: {{ status["turncounter"] }}   </h1>
+<div class="locationlist">
+    {% for location in locations %}
         {% set location_num = loop.index0 + 1 %}
-        <div class="location {{ 'winning' if location.winning == 'Ally' else 'losing' if location.winning == 'Enemy' else 'tie'}}">
-        <h2>{{ location.name }}</h2>
-    
-        <!-- Sezione Nemici -->
-        <h3 class = "dividertext"> Enemies </h3>
-        <div class="enemies">
-            {% for enemy_card in location.enemies %}
-            <div class="cardinlocation">
-                <img src="{{ enemy_card.render() }}" alt="{{ enemy_card.name }}" class="card img">
-                <p class= "cardtext">{{ enemy_card.name }} - Power: {{ enemy_card.cur_power }}</p>
-                <p class = "cardtext"> {{ enemy_card.description }}</p>
-            </div>
-            {% endfor %}
-        </div>
-        <div> 
-            <p class="totalpower"> Enemies Power: {{ location.enemiesPower }} <br> </p>
-            <p class = "locationdescription">{{location.description}} <br> </p>
-            <p class = "totalpower"> Allies Power: {{ location.alliesPower }}</p>
-        </div>
-        <!-- Sezione Alleati -->
-        <h3 class = "dividertext">Allies</h3>
-            <div class="allies">
-            {% for ally_card in location.allies%}
-                {% if ally_card not in location.cards_to_move %}
-                <form action="/game/ally/movecard" method="post">
-                <input type="hidden" name="locationNum" value="{{ location_num }}">
-                <input type="hidden" name="card" value="{{ loop.index0 }}">
-                <button type="submit">
+        <div class="location
+                {{ 'winning' if location.winning == 'Ally' else 'losing' if location.winning == 'Enemy' else 'tie'}}">
+            <h2>{{ location.name }}</h2>
+
+            <!-- Sezione Nemici -->
+            <h3 class="dividertext"> Enemies </h3>
+            <div class="enemies">
+                {% for enemy_card in location.enemies %}
                     <div class="cardinlocation">
-                        <img src="{{ ally_card.render() }}" alt="{{ ally_card.name }}" class = "card img">
-                        <p class = "cardtext">{{ ally_card.name }} - Power: {{ ally_card.cur_power }}</p>
-                        <p class = "cardtext"> {{ ally_card.description }}</p>
+                        <img src="{{ enemy_card.render() }}" alt="{{ enemy_card.name }}" class="card img">
+                        <p class="cardtext">{{ enemy_card.name }} - Power: {{ enemy_card.cur_power }}</p>
+                        <p class="cardtext"> {{ enemy_card.description }}</p>
                     </div>
-                </button>
-                </form>
-                {% endif %}
-            {% endfor %}
-            {% for ally_card in location.preRevealAllies %}
-                <div class="cardinlocation temp">
-                    <img src="{{ ally_card.render() }}" alt="{{ ally_card.name }}" class = "card img">
-                    <p class = "cardtext">{{ ally_card.name }} - Power: {{ ally_card.cur_power }}</p>
-                    <p class = "cardtext"> {{ ally_card.description }}</p>
-                </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
+            <div>
+                <p class="totalpower"> Enemies Power: {{ location.enemiesPower }} <br></p>
+                <p class="locationdescription">{{ location.description }} <br></p>
+                <p class="totalpower"> Allies Power: {{ location.alliesPower }}</p>
+            </div>
+            <!-- Sezione Alleati -->
+            <h3 class="dividertext">Allies</h3>
+            <div class="allies">
+                {% for ally_card in location.allies %}
+                    {% if ally_card not in location.cards_to_move %}
+                        <form action="/game/ally/movecard" method="post">
+                            <input type="hidden" name="locationNum" value="{{ location_num }}">
+                            <input type="hidden" name="card" value="{{ loop.index0 }}">
+                            <button type="submit">
+                                <div class="cardinlocation">
+                                    <img src="{{ ally_card.render() }}" alt="{{ ally_card.name }}" class="card img">
+                                    <p class="cardtext">{{ ally_card.name }} - Power: {{ ally_card.cur_power }}</p>
+                                    <p class="cardtext"> {{ ally_card.description }}</p>
+                                </div>
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endfor %}
+                {% for ally_card in location.preRevealAllies %}
+                    <div class="cardinlocation temp">
+                        <img src="{{ ally_card.render() }}" alt="{{ ally_card.name }}" class="card img">
+                        <p class="cardtext">{{ ally_card.name }} - Power: {{ ally_card.cur_power }}</p>
+                        <p class="cardtext"> {{ ally_card.description }}</p>
+                    </div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
-    </div>
-    <h1>Your Cards</h1>
-    <div class="hand-container">
-        {% for card in status["allyhand"] %}
+    {% endfor %}
+</div>
+<div id="snapNotice"
+     style="display:none; padding:8px; background:#ffcc00; color:red;
+              font-weight:bold; border-radius:6px; text-align:center;">
+    Opponent snapped! Stakes doubled.
+</div>
+{% if status["allysnapped"] %}
+  <div style="padding:8px; background:#00cc66; color:blue; font-weight:bold;
+              border-radius:6px; text-align:center;">
+    You snapped! Stakes doubled.
+  </div>
+{% endif %}
+<h1>Your Cards</h1>
+<div class="hand-container">
+    {% for card in status["allyhand"] %}
         <div class="card">
             <form action="/game/ally/playcard" method="post">
                 <input type="hidden" name="index" value="{{ loop.index0 }}">
                 <button type="submit">
                     <img src="{{ card.render() }}" alt="{{ card.name }}">
-                    <p class="cardtext">{{card.name}}: {{card.cur_cost}}</p>
-                    <p class="cardtext"> Power: {{card.cur_power}}, Description: {{card.description}}</p>
+                    <p class="cardtext">{{ card.name }}: {{ card.cur_cost }}</p>
+                    <p class="cardtext"> Power: {{ card.cur_power }}, Description: {{ card.description }}</p>
                 </button>
-                
+
             </form>
         </div>
-        {% endfor %}
-        <p class="energy">Energy: {{ status["allyenergy"] }}</p>
-        <button onclick="endTurn()" class="buttonstyle">End Turn</button>
-        <form action="/game/ally/undoActions" method="post">
-            <button type="submit" class="buttonstyle">
-                Undo Actions
-            </button>
-        </form>
-        <form action="/game/ally/snap" method="post">
-            <button type="submit" class="buttonstyle">
-                SNAP!
-            </button>
-        </form>
-        <form action="/game/ally/retreat" method="post">
-            <button type="submit" class="buttonstyle">
-                Retreat
-            </button>
-        </form>
-        <div>Current cubes: {{ status["cubes"] }}</div>
-    </div>
+    {% endfor %}
+    <p class="energy">Energy: {{ status["allyenergy"] }}</p>
+    <button onclick="endTurn()" class="buttonstyle">End Turn</button>
+    <form action="/game/ally/undoActions" method="post">
+        <button type="submit" class="buttonstyle">
+            Undo Actions
+        </button>
+    </form>
+    <form action="/game/ally/snap" method="post">
+        <button type="submit" class="buttonstyle">
+            SNAP!
+        </button>
+    </form>
+    <form action="/game/ally/retreat" method="post">
+        <button type="submit" class="buttonstyle">
+            Retreat
+        </button>
+    </form>
+    <div>Current cubes: {{ status["cubes"] }}</div>
+</div>
 
 </body>
 </html>
