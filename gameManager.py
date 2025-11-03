@@ -322,11 +322,11 @@ class GameState():
     def snap(self, turnAlly):
         if (turnAlly and not self.status["allysnapped"]):
             self.status["allysnapped"] = True
-            if self.status["tempcubes"] == self.status["cubes"]: self.status["tempcubes"] = 2
+            if self.status["tempcubes"] == self.status["cubes"]: self.status["tempcubes"] *= 2
             else: self.status["cubes"], self.status["tempcubes"] = 4,4
         elif (not turnAlly and not self.status["enemysnapped"]):
             self.status["enemysnapped"] = True
-            if self.status["tempcubes"] == self.status["cubes"]: self.status["tempcubes"] = 2
+            if self.status["tempcubes"] == self.status["cubes"]: self.status["tempcubes"] *= 2
             else: self.status["cubes"], self.status["tempcubes"] = 4,4
 
     def startOfTurn(self):
