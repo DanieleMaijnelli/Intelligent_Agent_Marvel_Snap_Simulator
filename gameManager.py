@@ -106,7 +106,7 @@ class GameState():
 
     def checkWinner(self):
         self.locationList["location1"].locationWinner(), self.locationList["location2"].locationWinner(), \
-        self.locationList["location3"].locationWinner()
+            self.locationList["location3"].locationWinner()
         results = [self.locationList["location1"].winning, self.locationList["location2"].winning,
                    self.locationList["location3"].winning]
         allywin, enemywin = 0, 0
@@ -301,6 +301,12 @@ class GameState():
                 case 6:
                     print("Which card would you like to move?")
                     self.moveSelection(self.turnAlly)
+                case 7:
+                    # RETREAT
+                    self.retreat(self.turnAlly)
+                    # esci subito dal turno; la partita è finita
+                    playerpass = True
+                    return turnenergy
                 case 8:
                     if (self.turnAlly and not self.status["allysnapped"]) or (
                         not self.turnAlly and not self.status["enemysnapped"]):
@@ -380,7 +386,7 @@ class GameState():
             "tempcubes"]
         self.announcer()
         self.locationList["location1"].startOfTurnMoves(), self.locationList["location2"].startOfTurnMoves(), \
-        self.locationList["location3"].startOfTurnMoves()
+            self.locationList["location3"].startOfTurnMoves()
         self.locationList["location1"].revealCards(), self.locationList["location2"].revealCards(), self.locationList[
             "location3"].revealCards()
         self.status["allypriority"] = not self.status["allypriority"]
@@ -475,8 +481,14 @@ class GameState():
         elif training:
             self.startOfTurn()
 
-    def retreat(allyOrEnemy):
-        pass
+    def retreat(self, ally: bool):
+        if ally:
+            self.passStatus['retreatally'] = True
+            self.passStatus['winner'] = "Enemy"
+        else:
+            self.passStatus['retreatenemy'] = True
+            self.passStatus['winner'] = "Ally"
+        self.endGame()
 
     def getHand(self, agent):
         if agent == "player_1":

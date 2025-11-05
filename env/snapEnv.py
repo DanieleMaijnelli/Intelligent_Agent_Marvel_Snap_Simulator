@@ -5,8 +5,9 @@ from gameManager import GameState
 import random
 import numpy
 
+
 class SnapEnv(ParallelEnv):
-    metadata = {"render.modes": ["human"], "name":"marvel_snap_v0"}
+    metadata = {"render.modes": ["human"], "name": "marvel_snap_v0"}
 
     def __init__(self):
         super().__init__()
@@ -17,98 +18,98 @@ class SnapEnv(ParallelEnv):
         self.tracked_player = None
         self.card_names = [
 
-        "Agent 13",
-        "America Chavez",
-        "Angel",
-        "Antman",
-        "Apocalypse",
-        "Armor",
-        "Bishop",
-        "Blade",
-        "Blue Marvel",
-        "Bucky Barnes",
-        "Winter Soldier",
-        "Cable",
-        "Captain America",
-        "Carnage",
-        "Cloak",
-        "Coleen Wing",
-        "Colossus",
-        "Cosmo",
-        "Death",
-        "Deathlok",
-        "Devil Dinosaur",
-        "Doctor Strange",
-        "Ebony Maw",
-        "Elektra",
-        "Enchantress",
-        "Forge",
-        "Gamora",
-        "Groot",
-        "Hawkeye",
-        "Heimdall",
-        "Hobgoblin",
-        "Hulk Buster",
-        "Iceman",
-        "The Infinaut",
-        "Iron Fist",
-        "Iron Man",
-        "Jessica Jones",
-        "Jubilee",
-        "Kazar",
-        "Killmonger",
-        "Klaw",
-        "Knull",
-        "Korg",
-        "Kraven",
-        "Lady Sif",
-        "Lizard",
-        "Magik",
-        "Mantis",
-        "Medusa",
-        "Mister Sinister",
-        "Sinister Clone",
-        "Namor",
-        "Nightcrawler",
-        "Onslaught",
-        "Punisher",
-        "Modok",
-        "Moongirl",
-        "Morbius",
-        "Morph",
-        "Mr Fantastic",
-        "Multiple Man",
-        "Nakia",
-        "Nova",
-        "Odin",
-        "Okoye",
-        "Professor X",
-        "Psylocke",
-        "Rhino",
-        "Rocket Racoon",
-        "Sabretooth",
-        "Scarlet Witch",
-        "Scorpion",
-        "Sentinel",
-        "Shang-Chi",
-        "Squirrel Girl",
-        "Squirrel",
-        "Star Lord",
-        "Storm",
-        "Strong Guy",
-        "Sunspot",
-        "Swarm",
-        "Sword Master",
-        "Uatu The Watcher",
-        "Vision",
-        "Vulture",
-        "Warpath",
-        "White Queen",
-        "White Tiger",
-        "Tiger",
-        "Wolfsbane",
-        "Wolvering",
-        "Yondu"
+            "Agent 13",
+            "America Chavez",
+            "Angel",
+            "Antman",
+            "Apocalypse",
+            "Armor",
+            "Bishop",
+            "Blade",
+            "Blue Marvel",
+            "Bucky Barnes",
+            "Winter Soldier",
+            "Cable",
+            "Captain America",
+            "Carnage",
+            "Cloak",
+            "Coleen Wing",
+            "Colossus",
+            "Cosmo",
+            "Death",
+            "Deathlok",
+            "Devil Dinosaur",
+            "Doctor Strange",
+            "Ebony Maw",
+            "Elektra",
+            "Enchantress",
+            "Forge",
+            "Gamora",
+            "Groot",
+            "Hawkeye",
+            "Heimdall",
+            "Hobgoblin",
+            "Hulk Buster",
+            "Iceman",
+            "The Infinaut",
+            "Iron Fist",
+            "Iron Man",
+            "Jessica Jones",
+            "Jubilee",
+            "Kazar",
+            "Killmonger",
+            "Klaw",
+            "Knull",
+            "Korg",
+            "Kraven",
+            "Lady Sif",
+            "Lizard",
+            "Magik",
+            "Mantis",
+            "Medusa",
+            "Mister Sinister",
+            "Sinister Clone",
+            "Namor",
+            "Nightcrawler",
+            "Onslaught",
+            "Punisher",
+            "Modok",
+            "Moongirl",
+            "Morbius",
+            "Morph",
+            "Mr Fantastic",
+            "Multiple Man",
+            "Nakia",
+            "Nova",
+            "Odin",
+            "Okoye",
+            "Professor X",
+            "Psylocke",
+            "Rhino",
+            "Rocket Racoon",
+            "Sabretooth",
+            "Scarlet Witch",
+            "Scorpion",
+            "Sentinel",
+            "Shang-Chi",
+            "Squirrel Girl",
+            "Squirrel",
+            "Star Lord",
+            "Storm",
+            "Strong Guy",
+            "Sunspot",
+            "Swarm",
+            "Sword Master",
+            "Uatu The Watcher",
+            "Vision",
+            "Vulture",
+            "Warpath",
+            "White Queen",
+            "White Tiger",
+            "Tiger",
+            "Wolfsbane",
+            "Wolvering",
+            "Yondu"
         ]
         self.CARD_NAME_TO_ID = {name: idx for idx, name in enumerate(self.card_names)}
         self.location_names = [
@@ -154,23 +155,23 @@ class SnapEnv(ParallelEnv):
         self.winrate = 0
         self.passing = {"player_1": False, "player_2": False}
         self.counter = 0
-        
+
         card_space = spaces.Dict({
             "id": spaces.Discrete(max_cards),
-            "cost": spaces.Box(low=0, high= 15, shape=(), dtype=np.int32),
-            "power": spaces.Box(low= -np.inf, high=np.inf, shape=(), dtype=np.int32),
+            "cost": spaces.Box(low=0, high=15, shape=(), dtype=np.int32),
+            "power": spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.int32),
         })
 
         location_card_space = spaces.Dict({
             "id": spaces.Discrete(max_cards),
-            "cost": spaces.Box(low=0, high= 15, shape=(), dtype=np.int32),
-            "power": spaces.Box(low= -np.inf, high=np.inf, shape=(), dtype=np.int32),
+            "cost": spaces.Box(low=0, high=15, shape=(), dtype=np.int32),
+            "power": spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.int32),
         })
 
         location_space = spaces.Dict({
             "id": spaces.Discrete(len(self.location_names)),
-            "ally_power": spaces.Box(low= -np.inf, high=np.inf, shape=(), dtype=np.int32),
-            "enemy_power": spaces.Box(low= -np.inf, high=np.inf, shape=(), dtype=np.int32),
+            "ally_power": spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.int32),
+            "enemy_power": spaces.Box(low=-np.inf, high=np.inf, shape=(), dtype=np.int32),
             "ally_cards": spaces.Sequence(location_card_space),
             "ally_cards_pre_reveal": spaces.Sequence(location_card_space),
             "enemy_cards": spaces.Sequence(location_card_space),
@@ -178,8 +179,8 @@ class SnapEnv(ParallelEnv):
 
         self._observation_space = spaces.Dict({
             "hand": spaces.Sequence(card_space),
-            "energy": spaces.Box(low=0, high= np.inf, shape=(), dtype=np.int32),
-            "turn": spaces.Discrete(max_turns+1),
+            "energy": spaces.Box(low=0, high=np.inf, shape=(), dtype=np.int32),
+            "turn": spaces.Discrete(max_turns + 1),
             "locations": spaces.Dict({
                 "location1": location_space,
                 "location2": location_space,
@@ -193,7 +194,7 @@ class SnapEnv(ParallelEnv):
         self.action_spaces = {agent: spaces.Discrete(action_size) for agent in self.possible_agents}
 
     def flatten_obs(self, obs, agent="player_1"):
-        hand = self.flatten_hand(obs['hand'], max_size = 7)
+        hand = self.flatten_hand(obs['hand'], max_size=7)
         energy = np.array([obs["energy"]])
         turn = np.array([obs["turn"]])
         locations = []
@@ -201,11 +202,11 @@ class SnapEnv(ParallelEnv):
             flat_loc = np.array(self.flatten_location(location))
             locations.append(flat_loc)
         return np.concatenate((hand, energy, turn, locations[0], locations[1], locations[2]))
-    
+
     def flatten_hand(self, hand, max_size):
         flat_hand = np.full(max_size * 3, -1, dtype=np.float32)
         for i, card in enumerate(hand[:max_size]):
-            flat_hand[i*3:(i+1)*3] = card["id"], card["cost"], card["power"]
+            flat_hand[i * 3:(i + 1) * 3] = card["id"], card["cost"], card["power"]
         return flat_hand
 
     def flatten_location(self, location):
@@ -213,18 +214,18 @@ class SnapEnv(ParallelEnv):
         ally_power = np.array([location["ally_power"]])
         enemy_power = np.array([location["enemy_power"]])
         ally_cards = self.flatten_hand(location["ally_cards"], 4)
-        ally_cards_pre_reveal = self.flatten_hand(location["ally_cards_pre_reveal"],4)
-        enemy_cards = self.flatten_hand(location["enemy_cards"],4)
+        ally_cards_pre_reveal = self.flatten_hand(location["ally_cards_pre_reveal"], 4)
+        enemy_cards = self.flatten_hand(location["enemy_cards"], 4)
         return np.concatenate((loc_id, ally_power, enemy_power, ally_cards, ally_cards_pre_reveal, enemy_cards))
 
-    def encode_action(self,card_idx, location_idx):
+    def encode_action(self, card_idx, location_idx):
         return card_idx * self.num_location + location_idx
 
     def decode_action(self, action):
         card_idx = action // 3
         location_idx = action % 3
         return (card_idx, location_idx)
-    
+
     def reset(self, seed=None, options=None):
         self.gm.reset()
         self.games += 1
@@ -236,16 +237,16 @@ class SnapEnv(ParallelEnv):
         return observations
 
     def observation_space(self, agent):
-        return self.observation_space[agent]
+        return self.observation_spaces[agent]
 
     def action_space(self, agent):
         return self.action_spaces[agent]
-    
+
     def fromCardToDict(self, card):
         if card is None:
             return {"id": -1, "cost": 0, "power": 0}
         return {
-            "id":self.CARD_NAME_TO_ID.get(card.name, -1),
+            "id": self.CARD_NAME_TO_ID.get(card.name, -1),
             "cost": card.cur_cost,
             "power": card.cur_power}
 
@@ -258,6 +259,7 @@ class SnapEnv(ParallelEnv):
                 player2count += 1
         reward = {"player_1": player1count, "player_2": player2count}
         return reward
+
     def step(self, actions):
         rewards = {agent: 0 for agent in self.agents}
         terminations = {agent: False for agent in self.agents}
@@ -271,25 +273,27 @@ class SnapEnv(ParallelEnv):
                     agent_actions = [agent_actions]
                 for action in agent_actions:
                     if action == self.pass_action or self.counter >= 7:
-                            if self.counter >= 7:
-                                for agentpass in self.agents:
-                                    if self.passing[agentpass] == False:
-                                        rewards[agentpass] -= 0.4
-                                        infos[agentpass]["nopass"] = True
-                            self.passing[agent] = True
-                            if (self.passing["player_1"] and self.passing["player_2"]) or self.counter >= 7:
-                                self.counter =0
-                                print("Both players passed")
-                                for card in self.gm.status["allyhand"]: #reward negative per ogni carta in mano rimasta che non hanno giocato nonostante avessero l'energia
-                                    if card.cost < self.gm.status["allyenergy"]:
-                                        rewards["player_1"] -= card.cost * 0.1
-                                for card in self.gm.status["enemyhand"]:
-                                    if card.cost < self.gm.status["enemyenergy"]:
-                                        rewards["player_2"] -= card.cost * 0.1
-                                self.gm.turnEnd(True)
-                                if self.gm.game_end:
-                                    break 
-                    cardidx, locationidx = self.decode_action(action) #in base al valore in input, ricava la carta e le location in cui viene giocata
+                        if self.counter >= 7:
+                            for agentpass in self.agents:
+                                if self.passing[agentpass] == False:
+                                    rewards[agentpass] -= 0.4
+                                    infos[agentpass]["nopass"] = True
+                        self.passing[agent] = True
+                        if (self.passing["player_1"] and self.passing["player_2"]) or self.counter >= 7:
+                            self.counter = 0
+                            print("Both players passed")
+                            for card in self.gm.status[
+                                "allyhand"]:  # reward negative per ogni carta in mano rimasta che non hanno giocato nonostante avessero l'energia
+                                if card.cost < self.gm.status["allyenergy"]:
+                                    rewards["player_1"] -= card.cost * 0.1
+                            for card in self.gm.status["enemyhand"]:
+                                if card.cost < self.gm.status["enemyenergy"]:
+                                    rewards["player_2"] -= card.cost * 0.1
+                            self.gm.turnEnd(True)
+                            if self.gm.game_end:
+                                break
+                    cardidx, locationidx = self.decode_action(
+                        action)  # in base al valore in input, ricava la carta e le location in cui viene giocata
                     current_hand = self.gm.getHand(agent=agent)
                     if cardidx > len(current_hand) - 1:
                         rewards[agent] -= 0.3
@@ -301,7 +305,8 @@ class SnapEnv(ParallelEnv):
                         if agent == "player_1":
                             ally = True
                             if card.cost <= self.gm.status["allyenergy"]:
-                                result = self.gm.addUnit(card, ally, self.gm.locationList[f"location{locationidx+1}"].locationNum)
+                                result = self.gm.addUnit(card, ally,
+                                                         self.gm.locationList[f"location{locationidx + 1}"].locationNum)
                                 if result:
                                     self.gm.status["allyenergy"] -= card.cost
                                     self.gm.status["allyhand"].remove(card)
@@ -317,7 +322,8 @@ class SnapEnv(ParallelEnv):
                         elif agent == "player_2":
                             ally = False
                             if card.cost <= self.gm.status["enemyenergy"]:
-                                result = self.gm.addUnit(card, ally, self.gm.locationList[f"location{locationidx+1}"].locationNum)
+                                result = self.gm.addUnit(card, ally,
+                                                         self.gm.locationList[f"location{locationidx + 1}"].locationNum)
                                 if result:
                                     self.gm.status["enemyenergy"] -= card.cost
                                     self.gm.status["enemyhand"].remove(card)
@@ -347,19 +353,20 @@ class SnapEnv(ParallelEnv):
                 infos["player_1"]["loss"] = True
                 infos["player_2"]["win"] = True
             else:
-                rewards["player_1"] -=0.5
-                rewards["player_2"] -=0.5
+                rewards["player_1"] -= 0.5
+                rewards["player_2"] -= 0.5
                 infos["player_1"]["draw"] = True
                 infos["player_2"]["draw"] = True
-        if (self.gm.locationList["location1"].alliesPower + self.gm.locationList["location2"].alliesPower + self.gm.locationList["location3"].alliesPower)/3 >= 8 and self.gm.checkWinner()== "Ally":
+        if (self.gm.locationList["location1"].alliesPower + self.gm.locationList["location2"].alliesPower +
+            self.gm.locationList["location3"].alliesPower) / 3 >= 8 and self.gm.checkWinner() == "Ally":
             rewards["player_1"] += 2
             infos["player_1"]["bonus_power"] = True
-        self.counter +=1
+        self.counter += 1
         observations = {agent: self.observe(agent) for agent in self.agents}
         self.agents = [] if all(terminations.values()) else self.agents
         self.render()
         return observations, rewards, terminations, truncations, infos
-    
+
     def observe(self, agent):
         hand = self.gm.getHand(agent=agent)
         obs_hand = [self.fromCardToDict(card) for card in hand]  # Rimosso `{}` esterno inutile
@@ -369,7 +376,7 @@ class SnapEnv(ParallelEnv):
         for locnum in range(3):
             loc = self.gm.locationList["location" + str(locnum + 1)]
             if agent == "player_1":
-                obs_locations[f"location{locnum+1}"] = {
+                obs_locations[f"location{locnum + 1}"] = {
                     "id": self.LOCATION_NAME_TO_ID.get(loc.name, -1),
                     "ally_power": loc.alliesPower,
                     "enemy_power": loc.enemiesPower,
@@ -379,7 +386,7 @@ class SnapEnv(ParallelEnv):
                 }
             elif agent == "player_2":
                 # Inverti le prospettive
-                obs_locations[f"location{locnum+1}"] = {
+                obs_locations[f"location{locnum + 1}"] = {
                     "id": self.LOCATION_NAME_TO_ID.get(loc.name, -1),
                     "ally_power": loc.enemiesPower,
                     "enemy_power": loc.alliesPower,
@@ -397,4 +404,3 @@ class SnapEnv(ParallelEnv):
 
     def render(self):
         print(self.gm.boardStatus())
-            
