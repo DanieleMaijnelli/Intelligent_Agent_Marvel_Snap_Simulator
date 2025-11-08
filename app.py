@@ -107,10 +107,10 @@ def moveUnit(allyorenemy):
     fromlocation = int(request.form["location_num"]) + 1
     location = "location" + str(fromlocation)
     if allyorenemy == "ally":
-        card = game.locationlist[location].allies[cardnum]
+        card = game.locationList[location].allies[cardnum]
         return render_template('moveCardAllies.html', card=card)
     elif allyorenemy == "enemy":
-        card = game.locationlist[location].enemies[cardnum]
+        card = game.locationList[location].enemies[cardnum]
         return render_template('moveCardEnemies.html', card=card)
 
 

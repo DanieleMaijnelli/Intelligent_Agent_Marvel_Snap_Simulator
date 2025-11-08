@@ -223,7 +223,7 @@ class GameState():
         if deck == []:
             print("No more cards in the deck!")
         else:
-            while i < num:
+            while (i < num and len(hand) < 7):
                 hand.append(deck[-1])
                 del deck[-1]
                 i += 1
@@ -338,18 +338,15 @@ class GameState():
     def snap(self, turnAlly):
         if (turnAlly and not self.status["allysnapped"]):
             self.status["allysnapped"] = True
-            if self.status["tempcubes"] == self.status["cubes"]:
-                self.status["tempcubes"] *= 2
-            else:
-                self.status["tempcubes"] = 4
+            self.status["tempcubes"] *= 2
+
         elif (not turnAlly and not self.status["enemysnapped"]):
             self.status["enemysnapped"] = True
-            if self.status["tempcubes"] == self.status["cubes"]:
-                self.status["tempcubes"] *= 2
-            else:
-                self.status["tempcubes"] = 4
+            self.status["tempcubes"] *= 2
 
     def startOfTurn(self):
+        if (self.turncounter == self.maxturns):
+            self.status["tempcubes"] *= 2
         self.locationList["location1"].startOfTurn()
         self.locationList["location2"].startOfTurn()
         self.locationList["location3"].startOfTurn()
@@ -407,13 +404,13 @@ class GameState():
         if self.status['turncounter'] == self.status['maxturns']:
             match winner:
                 case "Ally":
-                    print("Allies have won ", int(self.status["cubes"] * 2))
-                    print("Enemies have lost ", int(self.status["cubes"] * 2))
+                    print("Allies have won ", int(self.status["cubes"]))
+                    print("Enemies have lost ", int(self.status["cubes"]))
                     self.game['winner'] = 'player1'
                     self.passStatus['winner'] = 'player1'
                 case "Enemy":
-                    print("Allies have lost ", int(self.status["cubes"] * 2))
-                    print("Enemies have won ", int(self.status["cubes"] * 2))
+                    print("Allies have lost ", int(self.status["cubes"]))
+                    print("Enemies have won ", int(self.status["cubes"]))
                     self.game['winner'] = 'player2'
                     self.passStatus['winner'] = 'player2'
                 case "Tie":
