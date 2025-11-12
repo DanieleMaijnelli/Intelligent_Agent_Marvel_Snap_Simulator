@@ -10,9 +10,10 @@ import jsonschema
 import os
 import time
 from datetime import datetime
+import inspect
 
 
-class GameState():
+class GameState:
     def __init__(self):
         self.game = {
             "game_id": "",
@@ -311,7 +312,7 @@ class GameState():
                     if (self.turnAlly and not self.status["allysnapped"]) or (
                         not self.turnAlly and not self.status["enemysnapped"]):
                         print("SNAP!")
-                        self.snap(self.status, self.turnAlly)
+                        self.snap(self.turnAlly)
                     else:
                         print("You already snapped!")
 
@@ -494,6 +495,8 @@ class GameState():
             return self.status["enemyhand"]
 
 
+'''
 game = GameState()
 
 game.gameStart()
+'''
