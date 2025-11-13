@@ -52,17 +52,11 @@ def chooseLocationAlly():
 @app.route('/game/ally/playcard/<locationnum>', methods=['POST'])
 def playCardAlly(locationnum):
     locationToAdd = int(locationnum) + 1
-    inputUnit = int(request.form["card"])
-    was_added = False
+    unit_index = int(request.form["card"])
     if not game.status['allypass']:
         try:
-            if game.status["allyenergy"] < game.status["allyhand"][inputUnit].cur_cost:
-                print("not enough energy")
-            else:
-                was_added = game.addUnit(game.status["allyhand"][inputUnit], True, locationToAdd)
-            if was_added:
-                game.status["allyenergy"] -= game.status["allyhand"][inputUnit].cur_cost
-                del game.status["allyhand"][inputUnit]
+            game.addUnit(unit_index, True, locationToAdd)
+
         except Exception as e:
             print("error")
             print(e)
@@ -84,17 +78,11 @@ def chooseLocationEnemy():
 @app.route('/game/enemy/playcard/<locationnum>', methods=['POST'])
 def playCardEnemy(locationnum):
     locationToAdd = int(locationnum) + 1
-    inputUnit = int(request.form["card"])
-    was_added = False
+    unit_index = int(request.form["card"])
     if not game.status['enemypass']:
         try:
-            if game.status["enemyenergy"] < game.status["enemyhand"][inputUnit].cur_cost:
-                print("not enough energy")
-            else:
-                was_added = game.addUnit(game.status["enemyhand"][inputUnit], False, locationToAdd)
-            if was_added:
-                game.status["enemyenergy"] -= game.status["enemyhand"][inputUnit].cur_cost
-                del game.status["enemyhand"][inputUnit]
+            game.addUnit(unit_index, False, locationToAdd)
+
         except Exception as e:
             print("error")
             print(e)

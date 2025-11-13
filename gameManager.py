@@ -147,10 +147,19 @@ class GameState:
         with open(filename, "w") as f:
             json.dump(data, f, indent=2)
 
-    def addUnit(self, unit, ally, locNum):
+    def addUnit(self, unit_index, ally, locNum):
         selectedLoc = "location" + str(locNum)
         if ally:
-            was_added = self.locationList[selectedLoc].addToAllies(unit)
+            unit = self.status["allyhand"][unit_index]
+            if self.status["allyenergy"] < unit.cur_cost:
+                print("not enough energy")
+                was_added = False
+            else:
+                was_added = self.locationList[selectedLoc].addToAllies(unit)
+            if was_added:
+                self.status["allyenergy"] -= unit.cur_cost
+                del self.status["allyhand"][unit_index]
+
             print(self.locationList[selectedLoc].preRevealAllies)
             if was_added:
                 print(unit, " was added to ", self.locationList[selectedLoc].name)
@@ -160,7 +169,7 @@ class GameState:
                     "game_id": self.game_id,
                     "player": "player1",
                     "turn": self.status["turncounter"],
-                    "card_played": unit.name,
+                    "card_played": unit,
                     "location": {
                         "name": self.locationList[selectedLoc].name,
                         "position": self.locationList[selectedLoc].locationNum,
@@ -173,9 +182,19 @@ class GameState:
                     }
                 }
                 # self.registerMove(move)
+            print(unit, " was added?", was_added)
             return was_added
         else:
-            was_added = self.locationList[selectedLoc].addToEnemies(unit)
+            unit = self.status["enemyhand"][unit_index]
+            if self.status["enemyenergy"] < unit.cur_cost:
+                print("not enough energy")
+                was_added = False
+            else:
+                was_added = self.locationList[selectedLoc].addToEnemies(unit)
+            if was_added:
+                self.status["enemyenergy"] -= unit.cur_cost
+                del self.status["enemyhand"][unit_index]
+
             if was_added:
                 print(unit, " was added to ", self.locationList[selectedLoc].name)
                 unit.playCard(self.locationList[selectedLoc])
@@ -184,7 +203,7 @@ class GameState:
                     "game_id": self.game_id,
                     "player": "player2",
                     "turn": self.status["turncounter"],
-                    "card_played": unit.name,
+                    "card_played": unit,
                     "location": {
                         "name": self.locationList[selectedLoc].name,
                         "position": self.locationList[selectedLoc].locationNum,
