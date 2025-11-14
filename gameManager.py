@@ -421,18 +421,18 @@ class GameState:
         self.boardStatus()
         winner = self.checkWinner()
         self.game_end = True
-        if self.status['turncounter'] == self.status['maxturns']:
+        if self.status['turncounter'] >= self.status['maxturns']:
             match winner:
                 case "Ally":
                     print("Allies have won ", int(self.status["cubes"]))
                     print("Enemies have lost ", int(self.status["cubes"]))
                     self.game['winner'] = 'player1'
-                    self.passStatus['winner'] = 'player1'
+                    self.passStatus['winner'] = 'Ally'
                 case "Enemy":
                     print("Allies have lost ", int(self.status["cubes"]))
                     print("Enemies have won ", int(self.status["cubes"]))
                     self.game['winner'] = 'player2'
-                    self.passStatus['winner'] = 'player2'
+                    self.passStatus['winner'] = 'Enemy'
                 case "Tie":
                     print("Tie!")
                     self.game['winner'] = 'Tie'
@@ -441,10 +441,10 @@ class GameState:
             match self.passStatus['winner']:
                 case "Ally":
                     self.game['winner'] = 'player1'
-                    self.passStatus['winner'] = 'player1'
+                    self.passStatus['winner'] = 'Ally'
                 case "Enemy":
                     self.game['winner'] = 'player2'
-                    self.passStatus['winner'] = 'player2'
+                    self.passStatus['winner'] = 'Enemy'
                 case "Tie":
                     self.game['winner'] = 'Tie'
                     self.passStatus['winner'] = 'Tie'
