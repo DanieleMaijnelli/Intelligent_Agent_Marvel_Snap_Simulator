@@ -102,14 +102,13 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         if ally:
             energy = self.game.status["allyenergy"]
             energy_check = getattr(card, "cur_cost", 99) <= energy
-            location_check = location.checkIfLocationFull(ally) and location.can_play_cards_allies
+            location_check = (not location.checkIfLocationFull(ally)) and location.can_play_cards_allies
             unit_check = location.canCardBePlayed(card)
             return energy_check and location_check and unit_check
-
         else:
             energy = self.game.status["enemyenergy"]
             energy_check = getattr(card, "cur_cost", 99) <= energy
-            location_check = location.checkIfLocationFull(ally) and location.can_play_cards_enemies
+            location_check = (not location.checkIfLocationFull(ally)) and location.can_play_cards_enemies
             unit_check = location.canCardBePlayed(card)
             return energy_check and location_check and unit_check
 
