@@ -70,8 +70,6 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
             self.game.turnEnd(True)
             if getattr(self.game, "game_end", False):
                 terminations = {a: True for a in self.agents}
-            else:
-                self.game.startOfTurn()
 
         if any(terminations.values()):
             rew = self._terminal_reward()
@@ -89,11 +87,8 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         return self.action_spaces[agent]
 
     def _terminal_reward(self) -> float:
-        try:
-            winner = self.game.checkWinner()
-        except Exception:
-            winner = self.game.passStatus.get("winner", "Tie")
-        cubes = float(self.game.status.get("cubes", self.game.status.get("tempcubes", 1)))
+        winner = self.game.passStatus['winner']
+        cubes = float(self.game.status.get("cubes"))
         if winner == "Ally":
             return cubes
         if winner == "Enemy":

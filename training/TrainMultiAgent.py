@@ -37,8 +37,12 @@ algo = config.build()
 
 for i in range(1000):
     results = algo.train()
-    print(
-        f"Iter {i}: reward mean = {results['env_runners'].get('episode_return_mean', results['env_runners'].get('episode_reward_mean'))}")
+    reward_mean = (
+        results.get("env_runners", {}).get("episode_return_mean")
+        or results.get("env_runners", {}).get("episode_reward_mean")
+    )
+    print(f"Iter {i}: reward mean = {reward_mean}")
+
     if i % 50 == 0:
         checkpoint = algo.save()
         print(f"✅ Checkpoint salvato: {checkpoint}")

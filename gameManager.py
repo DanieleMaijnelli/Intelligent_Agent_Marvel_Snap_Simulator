@@ -491,9 +491,10 @@ class GameState:
         self.endGame()
 
     def turnEnd(self, training):
+        last_turn = (self.status["turncounter"] == self.status["maxturns"])
         self.endOfTurn()
         self.passStatus['turnend'] = True
-        if training and self.status["turncounter"] == self.status["maxturns"]:
+        if training and last_turn:
             self.endGame()
         elif training:
             self.startOfTurn()
