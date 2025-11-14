@@ -169,7 +169,7 @@ class GameState:
                     "game_id": self.game_id,
                     "player": "player1",
                     "turn": self.status["turncounter"],
-                    "card_played": unit,
+                    "card_played": unit.name,
                     "location": {
                         "name": self.locationList[selectedLoc].name,
                         "position": self.locationList[selectedLoc].locationNum,
@@ -203,7 +203,7 @@ class GameState:
                     "game_id": self.game_id,
                     "player": "player2",
                     "turn": self.status["turncounter"],
-                    "card_played": unit,
+                    "card_played": unit.name,
                     "location": {
                         "name": self.locationList[selectedLoc].name,
                         "position": self.locationList[selectedLoc].locationNum,

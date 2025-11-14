@@ -35,7 +35,7 @@ config = (
 
 algo = config.build()
 
-for i in range(1000):
+for i in range(20):
     results = algo.train()
     reward_mean = (
         results.get("env_runners", {}).get("episode_return_mean")
