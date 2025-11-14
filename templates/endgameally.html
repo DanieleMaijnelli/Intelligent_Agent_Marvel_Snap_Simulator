@@ -11,18 +11,11 @@
     {% set is_retreat = passStatus.get('retreatally') or passStatus.get('retreatenemy') %}
 
     {% if passStatus['winner'] == 'Enemy' %}
-        {% if is_retreat %}
-            You have lost {{ passStatus['cubes'] | int }} cubes!
-        {% else %}
-            You have lost {{ (status['cubes'] * 2) | int }} cubes!
-        {% endif %}
+        You have lost {{ status['cubes'] | int }} cubes!
 
     {% elif passStatus['winner'] == 'Ally' %}
-        {% if is_retreat %}
-            You have won {{ passStatus['cubes'] | int }} cubes!
-        {% else %}
-            You have won {{ (status['cubes'] * 2) | int }} cubes!
-        {% endif %}
+        You have won {{ status['cubes'] | int }} cubes!
+
 
     {% elif passStatus['winner'] == 'Tie' %}
         {% if is_retreat %}

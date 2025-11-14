@@ -365,7 +365,7 @@ class GameState:
             self.status["tempcubes"] *= 2
 
     def startOfTurn(self):
-        if (self.turncounter == self.maxturns):
+        if (self.status["turncounter"] == self.maxturns):
             self.status["tempcubes"] *= 2
         self.locationList["location1"].startOfTurn()
         self.locationList["location2"].startOfTurn()
