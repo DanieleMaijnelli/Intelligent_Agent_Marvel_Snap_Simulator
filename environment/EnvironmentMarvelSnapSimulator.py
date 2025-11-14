@@ -16,7 +16,7 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
     def __init__(self):
         self.agents = AGENTS
         self.possible_agents = AGENTS
-        self._obs_dim = 6 + 3 * 4 + 2 * MAX_HAND  # base + locations + hand feats
+        self._obs_dim = 6 + 3 * 4 + 2 * MAX_HAND
         self.observation_spaces = {
             a: spaces.Box(-np.inf, np.inf, shape=(self._obs_dim,), dtype=np.float32) for a in self.agents
         }
@@ -25,11 +25,10 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         self.game = GameState()
         self._action_maps = {a: [] for a in self.agents}
 
-    # ---------- API ----------
     def reset(self, seed=None, options=None):
         if seed is not None:
             random.seed(seed)
-        self.game.reset()  # il simulatore fa gameStart() dentro reset()
+        self.game.reset()
 
         obs = {a: self._encode_obs(a) for a in self.agents}
         infos = {a: {"action_mask": self._mask(a), "action_meanings": self._pretty(a)} for a in self.agents}
@@ -41,10 +40,8 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         rewards = {a: 0.0 for a in self.agents}
         infos = {}
 
-        # --- 1) interpreta le azioni simultanee ---
         intents = {a: self._resolve_action(a, actions[a]) for a in self.agents}
 
-        # --- 2) RETREAT ha priorità: termina subito ---
         if intents["player_1"][0] == "retreat":
             self.game.retreat(True)
             terminations = {a: True for a in self.agents}
@@ -52,44 +49,35 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
             self.game.retreat(False)
             terminations = {a: True for a in self.agents}
 
-        # --- 3) SNAP (non terminale) ---
         if intents["player_1"][0] == "snap":
             self.game.snap(True)
         if intents["player_2"][0] == "snap":
             self.game.snap(False)
 
-        # --- 4) PLAY: gioca carta (mano index, location) ---
         for agent, ally_flag in (("player_1", True), ("player_2", False)):
             kind = intents[agent][0]
             if kind == "play":
-                _, h_idx, loc_key = intents[agent]
+                _, hand_index, loc_key = intents[agent]
                 hand = self._hand(ally_flag)
-                if h_idx < len(hand):
-                    card = hand[h_idx]
-                    loc_num = int(loc_key[-1])  # "location1" -> 1
-                    self.game.addUnit(card, ally_flag, loc_num)
+                if hand_index < len(hand):
+                    loc_num = int(loc_key[-1])
+                    self.game.addUnit(hand_index, ally_flag, loc_num)
 
-        # --- 5) controllo di fine turno ---
-        # ora un turno finisce SOLO se entrambi hanno passato o ritirato
         p1_pass = intents["player_1"][0] in ("pass", "retreat")
         p2_pass = intents["player_2"][0] in ("pass", "retreat")
 
         if not any(terminations.values()) and p1_pass and p2_pass:
-            # chiudi il turno corrente
             self.game.turnEnd(True)
             if getattr(self.game, "game_end", False):
                 terminations = {a: True for a in self.agents}
             else:
-                # PREPARA IL TURNO SUCCESSIVO (energia, pesca, ecc.)
                 self.game.startOfTurn()
 
-        # --- 6) reward terminale zero-sum ---
         if any(terminations.values()):
-            rew = self._terminal_reward()  # POV Ally
+            rew = self._terminal_reward()
             rewards["player_1"] = rew
             rewards["player_2"] = -rew
 
-        # --- 7) osservazioni, mask, info ---
         obs = {a: self._encode_obs(a) for a in self.agents}
         infos = {a: {"action_mask": self._mask(a), "action_meanings": self._pretty(a)} for a in self.agents}
         return obs, rewards, terminations, truncations, infos
@@ -100,13 +88,7 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
     def action_space(self, agent):
         return self.action_spaces[agent]
 
-    # ---------- Helpers ----------
-
     def _terminal_reward(self) -> float:
-        # Coerente con l'implementazione corrente del simulatore:
-        # - al turno 6 tempcubes viene già raddoppiato in startOfTurn()
-        # - endOfTurn copia tempcubes -> cubes
-        # - endGame usa cubes "liscio"
         try:
             winner = self.game.checkWinner()
         except Exception:
@@ -121,18 +103,20 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
     def _hand(self, ally: bool):
         return self.game.status["allyhand"] if ally else self.game.status["enemyhand"]
 
-    def _can_play(self, ally: bool):
-        energy = self.game.status["allyenergy"] if ally else self.game.status["enemyenergy"]
-        hand = self._hand(ally)
-        locs = [
-            self.game.locationList["location1"],
-            self.game.locationList["location2"],
-            self.game.locationList["location3"],
-        ]
-        for c in hand:
-            if getattr(c, "cur_cost", 99) <= energy and any(not L.checkIfLocationFull(ally) for L in locs):
-                return True
-        return False
+    def _can_play(self, ally: bool, card, location):
+        if ally:
+            energy = self.game.status["allyenergy"]
+            energy_check = getattr(card, "cur_cost", 99) <= energy
+            location_check = location.checkIfLocationFull(ally) and location.can_play_cards_allies
+            unit_check = location.canCardBePlayed(card)
+            return energy_check and location_check and unit_check
+
+        else:
+            energy = self.game.status["enemyenergy"]
+            energy_check = getattr(card, "cur_cost", 99) <= energy
+            location_check = location.checkIfLocationFull(ally) and location.can_play_cards_enemies
+            unit_check = location.canCardBePlayed(card)
+            return energy_check and location_check and unit_check
 
     def _resolve_action(self, agent_name, chosen_action_index):
         legal_action_mask = self._mask(agent_name)
@@ -154,43 +138,38 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
     def _mask(self, agent):
         ally = (agent == "player_1")
         hand = self._hand(ally)
-        energy = self.game.status["allyenergy"] if ally else self.game.status["enemyenergy"]
-        locs = [
+        locations = [
             ("location1", self.game.locationList["location1"]),
             ("location2", self.game.locationList["location2"]),
             ("location3", self.game.locationList["location3"]),
         ]
-        amap, mask = [], []
+        actions_map, mask = [], []
 
-        # PLAY(card,loc) fino a MAX_HAND carte
         for h in range(MAX_HAND):
-            if (h < len(hand)):
+            if h < len(hand):
                 card = hand[h]
             else:
                 card = None
-            for name, L in locs:
-                if (card is not None):
-                    legal = (getattr(card, "cur_cost", 99) <= energy) and (not L.checkIfLocationFull(ally))
+            for name, location in locations:
+                if card is not None:
+                    legal = self._can_play(ally, card, location)
                 else:
                     legal = False
-                amap.append(("play", h, name))
+                actions_map.append(("play", h, name))
                 mask.append(1 if legal else 0)
 
-        # PASS sempre disponibile
-        amap.append(("pass",))
+        actions_map.append(("pass",))
         mask.append(1)
 
-        # SNAP disponibile se non già snappato da quel lato
         can_snap = not (self.game.status["allysnapped"] if ally else self.game.status["enemysnapped"])
-        amap.append(("snap",))
+        actions_map.append(("snap",))
         mask.append(1 if can_snap else 0)
 
-        # RETREAT sempre disponibile finché la partita non è finita
         can_retreat = not getattr(self.game, "game_end", False)
-        amap.append(("retreat",))
+        actions_map.append(("retreat",))
         mask.append(1 if can_retreat else 0)
 
-        self._action_maps[agent] = amap
+        self._action_maps[agent] = actions_map
         return np.array(mask, dtype=np.int8)
 
     def _encode_obs(self, agent):
