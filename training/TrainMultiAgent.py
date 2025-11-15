@@ -36,13 +36,13 @@ config = (
 algo = config.build()
 
 results = None
-for i in range(15):
+for i in range(21):
     results = algo.train()
     print(results)
 
-    if i % 2 == 0:
-        checkpoint = algo.save()
-        print(f"✅ Checkpoint salvato: {checkpoint}")
+    if i % 5 == 0:
+        checkpoint_path = algo.save(checkpoint_dir="checkpoints")
+        print(f"✅ Checkpoint salvato in: {checkpoint_path}")
 
 
 r_p1 = results["env_runners"]["agent_episode_returns_mean"]["player_1"]

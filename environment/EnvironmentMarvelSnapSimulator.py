@@ -14,8 +14,9 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
     metadata = {"name": "marvel_snap_parallel_v0"}
 
     def __init__(self):
-        self.agents = AGENTS
+        super().__init__()
         self.possible_agents = AGENTS
+        self.agents = list(AGENTS)
         self._obs_dim = 6 + 3 * 4 + 2 * MAX_HAND
         self.observation_spaces = {
             a: spaces.Box(-np.inf, np.inf, shape=(self._obs_dim,), dtype=np.float32) for a in self.agents
@@ -29,6 +30,8 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         if seed is not None:
             random.seed(seed)
         self.game.reset()
+        self.agents = self.possible_agents[:]
+        self._action_maps = {a: [] for a in self.agents}
 
         obs = {a: self._encode_obs(a) for a in self.agents}
         infos = {a: {"action_mask": self._mask(a), "action_meanings": self._pretty(a)} for a in self.agents}
