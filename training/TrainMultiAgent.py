@@ -35,16 +35,34 @@ config = (
 
 algo = config.build()
 
-for i in range(20):
+results = None
+for i in range(15):
     results = algo.train()
-    reward_mean = (
-        results.get("env_runners", {}).get("episode_return_mean")
-        or results.get("env_runners", {}).get("episode_reward_mean")
-    )
-    print(f"Iter {i}: reward mean = {reward_mean}")
+    print(results)
 
-    if i % 50 == 0:
+    if i % 2 == 0:
         checkpoint = algo.save()
         print(f"✅ Checkpoint salvato: {checkpoint}")
+
+
+r_p1 = results["env_runners"]["agent_episode_returns_mean"]["player_1"]
+r_p2 = results["env_runners"]["agent_episode_returns_mean"]["player_2"]
+print(f"reward_mean P1={r_p1:.3f} P2={r_p2:.3f}")
+
+env_stats = results["env_runners"]
+agent_returns = env_stats["agent_episode_returns_mean"]
+
+r_p1 = agent_returns["player_1"]
+r_p2 = agent_returns["player_2"]
+len_mean = env_stats["episode_len_mean"]
+
+print(f"P1 mean return = {r_p1:.3f} | P2 = {r_p2:.3f} | ep_len = {len_mean:.1f}")
+
+learner_p1 = results["learners"]["player_1"]
+entropy_p1 = learner_p1["entropy"]
+vf_var_p1 = learner_p1["vf_explained_var"]
+
+print(f"    P1: entropy={entropy_p1:.2f}, vf_explained_var={vf_var_p1:.2f}")
+
 
 ray.shutdown()
