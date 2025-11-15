@@ -3,6 +3,35 @@ from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from environment.EnvironmentMarvelSnapSimulator import TestEnvironmentMarvelSnapSimulator
 from ray import tune
+from pathlib import Path
+
+
+def print_metrics(results):
+    envr = results["env_runners"]
+    learner_p1 = results["info"]["learner"]["player_1"]["learner_stats"]
+    learner_p2 = results["info"]["learner"]["player_2"]["learner_stats"]
+
+    rew_p1 = envr["policy_reward_mean"]["player_1"]
+    rew_p2 = envr["policy_reward_mean"]["player_2"]
+    ep_len = envr["episode_len_mean"]
+
+    vfvar_p1 = learner_p1["vf_explained_var"]
+    vfvar_p2 = learner_p2["vf_explained_var"]
+
+    ent_p1 = learner_p1["entropy"]
+    ent_p2 = learner_p2["entropy"]
+
+    kl_p1 = learner_p1["kl"]
+    kl_p2 = learner_p2["kl"]
+
+    print(
+        f"P1_return={rew_p1:+.3f}  P2_return={rew_p2:+.3f}  "
+        f"ep_len={ep_len:.1f} | "
+        f"vf_var P1={vfvar_p1:.2f} P2={vfvar_p2:.2f} | "
+        f"entropy P1={ent_p1:.2f} P2={ent_p2:.2f} | "
+        f"kl P1={kl_p1:.3f} P2={kl_p2:.3f}"
+    )
+
 
 tune.register_env(
     "marvel_snap_env",
@@ -17,11 +46,18 @@ act_space_p2 = probe_env.action_space("player_2")
 
 ray.init(ignore_reinit_error=True)
 
+checkpoint_dir = Path("checkpoints").resolve()
+checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
 config = (
     PPOConfig()
     .environment(env="marvel_snap_env")
     .framework("torch")
-    .env_runners(num_env_runners=0)
+    .api_stack(
+        enable_rl_module_and_learner=False,
+        enable_env_runner_and_connector_v2=False,
+    )
+    .env_runners(num_env_runners=1)
     .training(gamma=0.99, lr=3e-4, entropy_coeff=0.01)
     .resources(num_gpus=0)
     .multi_agent(
@@ -41,28 +77,9 @@ for i in range(21):
     print(results)
 
     if i % 5 == 0:
-        checkpoint_path = algo.save(checkpoint_dir="checkpoints")
+        checkpoint_path = algo.save(checkpoint_dir=str(checkpoint_dir))
         print(f"✅ Checkpoint salvato in: {checkpoint_path}")
 
-
-r_p1 = results["env_runners"]["agent_episode_returns_mean"]["player_1"]
-r_p2 = results["env_runners"]["agent_episode_returns_mean"]["player_2"]
-print(f"reward_mean P1={r_p1:.3f} P2={r_p2:.3f}")
-
-env_stats = results["env_runners"]
-agent_returns = env_stats["agent_episode_returns_mean"]
-
-r_p1 = agent_returns["player_1"]
-r_p2 = agent_returns["player_2"]
-len_mean = env_stats["episode_len_mean"]
-
-print(f"P1 mean return = {r_p1:.3f} | P2 = {r_p2:.3f} | ep_len = {len_mean:.1f}")
-
-learner_p1 = results["learners"]["player_1"]
-entropy_p1 = learner_p1["entropy"]
-vf_var_p1 = learner_p1["vf_explained_var"]
-
-print(f"    P1: entropy={entropy_p1:.2f}, vf_explained_var={vf_var_p1:.2f}")
-
+print_metrics(results)
 
 ray.shutdown()

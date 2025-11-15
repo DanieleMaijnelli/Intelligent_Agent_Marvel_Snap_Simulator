@@ -75,9 +75,9 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
                 terminations = {a: True for a in self.agents}
 
         if any(terminations.values()):
-            rew = self._terminal_reward()
-            rewards["player_1"] = rew
-            rewards["player_2"] = -rew
+            reward = self._terminal_reward()
+            rewards["player_1"] = reward
+            rewards["player_2"] = -reward
 
         obs = {a: self._encode_obs(a) for a in self.agents}
         infos = {a: {"action_mask": self._mask(a), "action_meanings": self._pretty(a)} for a in self.agents}

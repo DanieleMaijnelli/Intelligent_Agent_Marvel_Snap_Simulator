@@ -123,30 +123,6 @@ class GameState:
         else:
             return self.resolveTie()
 
-    def registerMove(self, move):
-        print("Registering move")
-        with open("matchlogs/schema/schema-move.json", "r") as schema_file:
-            schema = json.load(schema_file)
-        try:
-            jsonschema.validate(move, schema)
-        except jsonschema.exceptions.ValidationError as e:
-            print(e)
-        directory = "matchlogs"
-        os.makedirs(directory, exist_ok=True)
-        filename = os.path.join(directory, f"moves/move-{self.version}-data.json")
-        if os.path.exists(filename):
-            with open(filename, "r") as f:
-                data = json.load(f)
-        else:
-            data = []
-
-        if any(existing["move_id"] == move["move_id"] for existing in data):
-            print("ignored")
-            return
-        data.append(move)
-        with open(filename, "w") as f:
-            json.dump(data, f, indent=2)
-
     def addUnit(self, unit_index, ally, locNum):
         selectedLoc = "location" + str(locNum)
         if ally:
@@ -181,7 +157,6 @@ class GameState:
                         ],
                     }
                 }
-                # self.registerMove(move)
             print(unit, " was added?", was_added)
             return was_added
         else:
@@ -271,73 +246,6 @@ class GameState:
         for location in self.locationList.values():
             location.startOfTurn()
 
-    def playerTurn(self, hand, deck, energy):
-        self.draw(hand, deck, 1)
-        for location in self.locationList.values():
-            location.updateGameState()
-        playerpass = False
-        turnenergy = energy
-        while not playerpass:
-            print()
-            print("Press 1 to check hand and current energy,"
-                  " 2 to add an unit to the board,"
-                  " 3 to pass,"
-                  " 4 to check board status,"
-                  " 5 to undo your actions, "
-                  "6 to move a card, "
-                  "7 to retreat,"
-                  " 8 to SNAP!")
-            check = True
-            while check:
-                try:
-                    userInput = int(input("What do you want to do? "))
-                    check = False
-                except:
-                    print("InputError")
-            match userInput:
-                case 1:
-                    print("Energy left: ", turnenergy)
-                    i = 1
-                    for unit in hand:
-                        print(i, ": ", unit.name, "Cost:", unit.cur_cost, " Power: ", unit.cur_power, " Description:",
-                              unit.description)
-                        i += 1
-                case 2:
-                    print("Energy left:", turnenergy)
-                    print("Which unit would you like to add")
-                    i = 1
-                    for unit in hand:
-                        print(i, ": ", unit.name, "Cost:", unit.cur_cost, " Power: ", unit.cur_power, " Description:",
-                              unit.description)
-                        i += 1
-
-                case 3:
-                    playerpass = True
-                    return turnenergy
-                case 4:
-                    self.boardStatus()
-                case 5:
-                    turnenergy += self.undoActions(self.turnAlly, hand)
-                case 6:
-                    print("Which card would you like to move?")
-                    self.moveSelection(self.turnAlly)
-                case 7:
-                    # RETREAT
-                    self.retreat(self.turnAlly)
-                    # esci subito dal turno; la partita è finita
-                    playerpass = True
-                    return turnenergy
-                case 8:
-                    if (self.turnAlly and not self.status["allysnapped"]) or (
-                        not self.turnAlly and not self.status["enemysnapped"]):
-                        print("SNAP!")
-                        self.snap(self.turnAlly)
-                    else:
-                        print("You already snapped!")
-
-                case _:
-                    print("Input error")
-
     def moveSelection(self, card, location):
         for moves in card.location.cards_to_move:
             if moves[0] == card:
@@ -365,7 +273,7 @@ class GameState:
             self.status["tempcubes"] *= 2
 
     def startOfTurn(self):
-        if (self.status["turncounter"] == self.maxturns):
+        if self.status["turncounter"] == self.maxturns:
             self.status["tempcubes"] *= 2
         self.locationList["location1"].startOfTurn()
         self.locationList["location2"].startOfTurn()
@@ -419,76 +327,28 @@ class GameState:
 
     def endGame(self):
         self.boardStatus()
-        winner = self.checkWinner()
+        if (not self.passStatus["retreatally"] and not self.passStatus["retreatenemy"]):
+            winner = self.checkWinner()
+        else:
+            winner = self.passStatus['winner']
         self.game_end = True
-        if self.status['turncounter'] >= self.status['maxturns']:
-            match winner:
-                case "Ally":
-                    print("Allies have won ", int(self.status["cubes"]))
-                    print("Enemies have lost ", int(self.status["cubes"]))
-                    self.game['winner'] = 'player1'
-                    self.passStatus['winner'] = 'Ally'
-                case "Enemy":
-                    print("Allies have lost ", int(self.status["cubes"]))
-                    print("Enemies have won ", int(self.status["cubes"]))
-                    self.game['winner'] = 'player2'
-                    self.passStatus['winner'] = 'Enemy'
-                case "Tie":
-                    print("Tie!")
-                    self.game['winner'] = 'Tie'
-                    self.passStatus['winner'] = 'Tie'
-        else:
-            match self.passStatus['winner']:
-                case "Ally":
-                    self.game['winner'] = 'player1'
-                    self.passStatus['winner'] = 'Ally'
-                case "Enemy":
-                    self.game['winner'] = 'player2'
-                    self.passStatus['winner'] = 'Enemy'
-                case "Tie":
-                    self.game['winner'] = 'Tie'
-                    self.passStatus['winner'] = 'Tie'
+        match winner:
+            case "Ally":
+                print("Allies have won ", int(self.status["cubes"]))
+                print("Enemies have lost ", int(self.status["cubes"]))
+                self.game['winner'] = 'player1'
+                self.passStatus['winner'] = 'Ally'
+            case "Enemy":
+                print("Allies have lost ", int(self.status["cubes"]))
+                print("Enemies have won ", int(self.status["cubes"]))
+                self.game['winner'] = 'player2'
+                self.passStatus['winner'] = 'Enemy'
+            case "Tie":
+                print("Tie!")
+                self.game['winner'] = 'Tie'
+                self.passStatus['winner'] = 'Tie'
+
         self.game['end_time'] = datetime.utcfromtimestamp(time.time()).isoformat() + "Z"
-        # self.registerGame(self.game)
-
-    def registerGame(self, game):
-        print("registering!")
-        with open("matchlogs/schema/schema-game.json", "r") as schema_file:
-            schema = json.load(schema_file)
-        try:
-            jsonschema.validate(game, schema)
-        except jsonschema.exceptions.ValidationError as e:
-            print(e)
-        directory = "matchlogs"
-        os.makedirs(directory, exist_ok=True)
-        filename = os.path.join(directory, f"games/game-{self.version}-data.json")
-        if os.path.exists(filename):
-            with open(filename, "r") as f:
-                data = json.load(f)
-        else:
-            data = []
-
-        if any(existing["game_id"] == game["game_id"] for existing in data):
-            print("ignored")
-            return
-        data.append(game)
-
-        with open(filename, "w") as f:
-            json.dump(data, f, indent=2)
-
-    def gaming(self):
-        while self.status["turncounter"] <= self.status["maxturns"]:
-            print("Turn ", self.status["turncounter"], ", player turn")
-            print("")
-            self.startOfTurn(self.status)
-            self.boardStatus()
-            turnAlly = not turnAlly
-            print("Turn ", self.status["turncounter"], ", enemy turn")
-            turnAlly = not turnAlly
-            self.status["enemyenergy"] = self.playerTurn(self.status["enemyhand"], self.status["enemydeck"],
-                                                         self.status["enemyenergy"])
-            self.endOfTurn()
-        self.endGame()
 
     def turnEnd(self, training):
         last_turn = (self.status["turncounter"] == self.status["maxturns"])
