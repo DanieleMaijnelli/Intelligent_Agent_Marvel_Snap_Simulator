@@ -403,4 +403,4 @@ class SnapEnv(ParallelEnv):
         }
 
     def render(self):
-        print(self.gm.boardStatus())
+        print(self.gm.print_board_state())

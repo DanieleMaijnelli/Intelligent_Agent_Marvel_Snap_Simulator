@@ -14,13 +14,14 @@ import inspect
 
 
 class GameState:
-    def __init__(self):
+    def __init__(self, verbose: bool = True):
         self.game = {
             "game_id": "",
             "winner": "None",
             "start_time": "",
             "end_time": "",
         }
+        self.verbose = verbose
         self.version = '1.1.0'
         self.game_id = ''
         self.exit = False
@@ -56,6 +57,10 @@ class GameState:
         self.locationList["location1"] = TemporaryLocation(1, self.status, self.locationList)
         self.locationList["location2"] = TemporaryLocation(2, self.status, self.locationList)
         self.locationList["location3"] = TemporaryLocation(3, self.status, self.locationList)
+
+    def log(self, msg: str):
+        if self.verbose:
+            print(msg)
 
     def reset(self):
         self.exit = False
@@ -128,7 +133,7 @@ class GameState:
         if ally:
             unit = self.status["allyhand"][unit_index]
             if self.status["allyenergy"] < unit.cur_cost:
-                print("not enough energy")
+                self.log("not enough energy")
                 was_added = False
             else:
                 was_added = self.locationList[selectedLoc].addToAllies(unit)
@@ -136,9 +141,7 @@ class GameState:
                 self.status["allyenergy"] -= unit.cur_cost
                 del self.status["allyhand"][unit_index]
 
-            print(self.locationList[selectedLoc].preRevealAllies)
             if was_added:
-                print(unit, " was added to ", self.locationList[selectedLoc].name)
                 unit.playCard(self.locationList[selectedLoc])
                 move = {
                     "move_id": str(uuid.uuid4()),
@@ -157,12 +160,11 @@ class GameState:
                         ],
                     }
                 }
-            print(unit, " was added?", was_added)
             return was_added
         else:
             unit = self.status["enemyhand"][unit_index]
             if self.status["enemyenergy"] < unit.cur_cost:
-                print("not enough energy")
+                self.log("Not enough energy")
                 was_added = False
             else:
                 was_added = self.locationList[selectedLoc].addToEnemies(unit)
@@ -171,7 +173,6 @@ class GameState:
                 del self.status["enemyhand"][unit_index]
 
             if was_added:
-                print(unit, " was added to ", self.locationList[selectedLoc].name)
                 unit.playCard(self.locationList[selectedLoc])
                 move = {
                     "move_id": str(uuid.uuid4()),
@@ -190,40 +191,30 @@ class GameState:
                         ],
                     }
                 }
-                # self.registerMove(move)
-            print(unit, " was added?", was_added)
             return was_added
 
     def undoActions(self, turnAlly, hand):
         loc1temp = self.locationList["location1"].undoActions(turnAlly)
         loc2temp = self.locationList["location2"].undoActions(turnAlly)
         loc3temp = self.locationList["location3"].undoActions(turnAlly)
-        print("temps:", loc1temp, loc2temp, loc3temp)
+        self.log("temps:", loc1temp, loc2temp, loc3temp)
         refund = 0
         for unit in loc1temp + loc2temp + loc3temp:
             refund += unit.cur_cost
         hand += loc1temp + loc2temp + loc3temp
         return refund
 
-    def boardStatus(self):  # ritorna una stringa che definisce lo stato di ogni location
-        print(self.locationList["location1"].name, "[", self.locationList["location1"].description, "]: ",
-              self.locationList["location1"].locationStatus(), "")
-        print(self.locationList["location2"].name, "[", self.locationList["location2"].description, "]: ",
-              self.locationList["location2"].locationStatus(), "")
-        print(self.locationList["location3"].name, "[", self.locationList["location3"].description, "]: ",
-              self.locationList["location3"].locationStatus(), "")
-
-    def draw(self, hand, deck, num):  # pesca un numero di carte dal deck
+    def draw(self, hand, deck, num):
         i = 0
         if deck == []:
-            print("No more cards in the deck!")
+            self.log("No more cards in the deck!")
         else:
-            while (i < num and len(hand) < 7):
+            while i < num and len(hand) < 7:
                 hand.append(deck[-1])
                 del deck[-1]
                 i += 1
 
-    def gameStart(self):  # inserisci carte nel deck e pesca le carte
+    def gameStart(self):
         ALL_CARDS = [
             cls for name, cls in inspect.getmembers(cards, inspect.isclass)
             if cls.__module__.startswith("cards") and cls is not cards.Card
@@ -249,10 +240,10 @@ class GameState:
     def moveSelection(self, card, location):
         for moves in card.location.cards_to_move:
             if moves[0] == card:
-                print("You already moved that card")
+                self.log("You already moved that card")
                 return "error"
         if location == card:
-            print("You can't move the card to the same location")
+            self.log("You can't move the card to the same location")
         else:
             if card.moves_number > 0 or location.location_can_be_moved_to:
                 if not location.checkIfLocationFull(card.ally):
@@ -289,62 +280,58 @@ class GameState:
         match winning:
             case "Ally" | "Tie":
                 self.status["allypriority"] = True
-                print("Allies have priority")
             case "Enemy":
                 self.status["allypriority"] = False
-                print("Enemies have priority")
         for card in self.status["allyhand"] + self.status["allydeck"] + self.status["enemyhand"] + self.status[
             "enemydeck"]:
             card.updateCard(self.locationList)
         self.draw(self.status["allyhand"], self.status["allydeck"], 1)
         self.draw(self.status["enemyhand"], self.status["enemydeck"], 1)
 
-    def announcer(self):
-        match self.status["allypriority"]:
-            case True:
-                print("Revealing ally cards")
-            case False:
-                print("Revealing enemy cards")
-
     def endOfTurn(self):
         if not (self.passStatus["retreatally"] or self.passStatus["retreatenemy"]): self.status["cubes"] = self.status[
             "tempcubes"]
-        self.announcer()
+
         self.locationList["location1"].startOfTurnMoves(), self.locationList["location2"].startOfTurnMoves(), \
             self.locationList["location3"].startOfTurnMoves()
         self.locationList["location1"].revealCards(), self.locationList["location2"].revealCards(), self.locationList[
             "location3"].revealCards()
         self.status["allypriority"] = not self.status["allypriority"]
-        self.announcer()
         self.locationList["location1"].revealCards(), self.locationList["location2"].revealCards(), self.locationList[
             "location3"].revealCards()
-        print("End of turn ", self.status["turncounter"])
         self.locationList["location1"].endOfTurn(), self.locationList["location2"].endOfTurn(), self.locationList[
             "location3"].endOfTurn()
+
+        self.log(f"--- End of turn {self.status['turncounter']} ---")
+        self.print_board_state()
+
         self.status["turncounter"] += 1
         self.status["allymaxenergy"] += 1
         self.status["enemymaxenergy"] += 1
 
     def endGame(self):
-        self.boardStatus()
-        if (not self.passStatus["retreatally"] and not self.passStatus["retreatenemy"]):
+        self.log("========== FINAL BOARD ==========")
+        self.print_board_state()
+        if not self.passStatus["retreatally"] and not self.passStatus["retreatenemy"]:
             winner = self.checkWinner()
         else:
             winner = self.passStatus['winner']
         self.game_end = True
+
+        cubes = int(self.status["cubes"])
         match winner:
             case "Ally":
-                print("Allies have won ", int(self.status["cubes"]))
-                print("Enemies have lost ", int(self.status["cubes"]))
+                self.log(f"RESULT: Ally wins {cubes} cubes")
+                self.log(f"        Enemy loses {cubes} cubes")
                 self.game['winner'] = 'player1'
                 self.passStatus['winner'] = 'Ally'
             case "Enemy":
-                print("Allies have lost ", int(self.status["cubes"]))
-                print("Enemies have won ", int(self.status["cubes"]))
+                self.log(f"RESULT: Enemy wins {cubes} cubes")
+                self.log(f"        Ally loses {cubes} cubes")
                 self.game['winner'] = 'player2'
                 self.passStatus['winner'] = 'Enemy'
             case "Tie":
-                print("Tie!")
+                self.log("RESULT: Tie")
                 self.game['winner'] = 'Tie'
                 self.passStatus['winner'] = 'Tie'
 
@@ -374,9 +361,29 @@ class GameState:
         elif agent == "player_2":
             return self.status["enemyhand"]
 
+    def _format_location_state(self, loc):
+        return (
+            f"{loc.name} [{loc.description}]\n"
+            f"  Ally power: {loc.alliesPower}   Enemy power: {loc.enemiesPower}\n"
+            f"  Allies: {[card.name for card in loc.allies]}\n"
+            f"  Enemies: {[card.name for card in loc.enemies]}\n"
+            f"  Winner: {loc.winning}\n"
+        )
 
-'''
-game = GameState()
+    def format_board_state(self) -> str:
+        s = [f"=== Turn {self.status['turncounter']} ===",
+             f"Energy: Ally={self.status['allyenergy']}  Enemy={self.status['enemyenergy']}",
+             f"Cubes: {self.status['cubes']} (temp: {self.status['tempcubes']})",
+             f"Priority: {'Ally' if self.status['allypriority'] else 'Enemy'}", ""]
 
-game.gameStart()
-'''
+        for key in ["location1", "location2", "location3"]:
+            loc = self.locationList[key]
+            s.append(self._format_location_state(loc))
+
+        s.append("")
+        s.append(f"Ally hand:  {[c.name for c in self.status['allyhand']]}")
+        s.append(f"Enemy hand: {[c.name for c in self.status['enemyhand']]}")
+        return "\n".join(s)
+
+    def print_board_state(self):
+        self.log(self.format_board_state())
