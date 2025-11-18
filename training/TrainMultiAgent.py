@@ -4,34 +4,7 @@ from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from environment.EnvironmentMarvelSnapSimulator import TestEnvironmentMarvelSnapSimulator
 from ray import tune
 from pathlib import Path
-
-
-def print_metrics(results):
-    envr = results["env_runners"]
-    learner_p1 = results["info"]["learner"]["player_1"]["learner_stats"]
-    learner_p2 = results["info"]["learner"]["player_2"]["learner_stats"]
-
-    rew_p1 = envr["policy_reward_mean"]["player_1"]
-    rew_p2 = envr["policy_reward_mean"]["player_2"]
-    ep_len = envr["episode_len_mean"]
-
-    vfvar_p1 = learner_p1["vf_explained_var"]
-    vfvar_p2 = learner_p2["vf_explained_var"]
-
-    ent_p1 = learner_p1["entropy"]
-    ent_p2 = learner_p2["entropy"]
-
-    kl_p1 = learner_p1["kl"]
-    kl_p2 = learner_p2["kl"]
-
-    print(
-        f"P1_return={rew_p1:+.3f}  P2_return={rew_p2:+.3f}  "
-        f"ep_len={ep_len:.1f} | "
-        f"vf_var P1={vfvar_p1:.2f} P2={vfvar_p2:.2f} | "
-        f"entropy P1={ent_p1:.2f} P2={ent_p2:.2f} | "
-        f"kl P1={kl_p1:.3f} P2={kl_p2:.3f}"
-    )
-
+from StatisticsPrinter import print_multiagent_training_summary
 
 tune.register_env(
     "marvel_snap_env",
@@ -72,14 +45,13 @@ config = (
 algo = config.build()
 
 results = None
-for i in range(21):
+for i in range(31):
     results = algo.train()
-    print(results)
 
-    if i % 5 == 0:
+    if i % 10 == 0:
         checkpoint_path = algo.save(checkpoint_dir=str(checkpoint_dir))
         print(f"✅ Checkpoint salvato in: {checkpoint_path}")
 
-print_metrics(results)
+print_multiagent_training_summary(results)
 
 ray.shutdown()

@@ -13,7 +13,7 @@ AGENTS = ["player_1", "player_2"]
 class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
     metadata = {"name": "marvel_snap_parallel_v0"}
 
-    def __init__(self):
+    def __init__(self, verbose: bool = False):
         super().__init__()
         self.possible_agents = AGENTS
         self.agents = list(AGENTS)
@@ -23,7 +23,7 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         }
         self.action_spaces = {a: spaces.Discrete(MAX_ACTIONS) for a in self.agents}
 
-        self.game = GameState()
+        self.game = GameState(verbose)
         self._action_maps = {a: [] for a in self.agents}
 
     def reset(self, seed=None, options=None):
@@ -33,7 +33,7 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         self.agents = self.possible_agents[:]
         self._action_maps = {a: [] for a in self.agents}
 
-        obs = {a: self._encode_obs(a) for a in self.agents}
+        obs = {a: self._encode_objects(a) for a in self.agents}
         infos = {a: {"action_mask": self._mask(a), "action_meanings": self._pretty(a)} for a in self.agents}
         return obs, infos
 
@@ -79,7 +79,7 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
             rewards["player_1"] = reward
             rewards["player_2"] = -reward
 
-        obs = {a: self._encode_obs(a) for a in self.agents}
+        obs = {a: self._encode_objects(a) for a in self.agents}
         infos = {a: {"action_mask": self._mask(a), "action_meanings": self._pretty(a)} for a in self.agents}
         return obs, rewards, terminations, truncations, infos
 
@@ -169,17 +169,17 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         self._action_maps[agent] = actions_map
         return np.array(mask, dtype=np.int8)
 
-    def _encode_obs(self, agent):
+    def _encode_objects(self, agent):
         ally = (agent == "player_1")
         status = self.game.status
         locations = self.game.locationList
 
-        def loc_feats(loc):
+        def location_features(loc):
             ally_power = getattr(loc, "alliesPower", 0)
             enemy_power = getattr(loc, "enemiesPower", 0)
-            aC = len(getattr(loc, "allies", []))
-            eC = len(getattr(loc, "enemies", []))
-            return [ally_power, enemy_power, aC, eC]
+            allies_count = len(getattr(loc, "allies", []))
+            enemies_count = len(getattr(loc, "enemies", []))
+            return [ally_power, enemy_power, allies_count, enemies_count]
 
         base = [
             status.get("turncounter", 1),
@@ -190,19 +190,19 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
             1.0 if (status.get("allypriority", True) if ally else not status.get("allypriority", True)) else 0.0,
         ]
         vec = base
-        vec += loc_feats(locations["location1"])
-        vec += loc_feats(locations["location2"])
-        vec += loc_feats(locations["location3"])
+        vec += location_features(locations["location1"])
+        vec += location_features(locations["location2"])
+        vec += location_features(locations["location3"])
 
         hand = self._hand(ally)
-        hand_feats = []
+        hand_features = []
         for i in range(MAX_HAND):
             if i < len(hand):
-                c = hand[i]
-                hand_feats += [getattr(c, "cur_cost", 0), getattr(c, "cur_power", 0)]
+                card = hand[i]
+                hand_features += [getattr(card, "cur_cost", 0), getattr(card, "cur_power", 0)]
             else:
-                hand_feats += [0, 0]
-        vec += hand_feats
+                hand_features += [0, 0]
+        vec += hand_features
         return np.array(vec, dtype=np.float32)
 
     def _pretty(self, agent):
@@ -214,8 +214,13 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
 
             if action_type == "play":
                 hand_index = action_description[1]
+                hand = self._hand(agent == "player_1")
+                if hand_index < len(hand):
+                    card_name = getattr(hand[hand_index], "name", "Error")
+                else:
+                    card_name = f"hand[{hand_index}]"
                 target_location = action_description[2]
-                readable_labels.append(f"PLAY(hand[{hand_index}] → {target_location})")
+                readable_labels.append(f"PLAY({card_name} → {target_location})")
             else:
                 readable_labels.append(action_type.upper())
 

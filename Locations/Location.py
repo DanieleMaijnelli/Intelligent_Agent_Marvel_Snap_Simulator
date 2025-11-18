@@ -71,8 +71,6 @@ class Location:
             return False
 
     def addToAllies(self, unit):
-        print("Adding allies!")
-        print("Adding ", unit.name)
         if not self.checkIfLocationFull(True) and self.can_play_cards_allies:
             if self.canCardBePlayed(unit):
                 self.preRevealAllies.append(unit)
@@ -88,8 +86,6 @@ class Location:
             return False
 
     def addToEnemies(self, unit):
-        print("Adding enemies!")
-        print("Adding ", unit.name)
         if not self.checkIfLocationFull(unit.ally) and self.can_play_cards_enemies:
             if self.canCardBePlayed(unit):
                 self.preRevealEnemies.append(unit)
@@ -215,11 +211,9 @@ class Location:
     def revealCards(self):
         if (self.status["allypriority"]):
             if len(self.preRevealAllies) > 0:
-                print("Allies are revealing on location ", self.locationNum, ":", self.preRevealAllies)
                 self.handleReveals(self.preRevealAllies)
         else:
             if len(self.preRevealEnemies) > 0:
-                print("Enemies are revealing: on location ", self.locationNum, ":", self.preRevealEnemies)
                 self.handleReveals(self.preRevealEnemies)
         self.countPower()
 
@@ -248,8 +242,6 @@ class Location:
 
     def endOfTurn(self):
         self.locationWinner()
-        print("End of turn ", self.status["turncounter"])
-        print("End of turn of cards in location ", self.locationNum)
         self.activateEndOfTurns(self.allies)
         self.activateEndOfTurns(self.enemies)
         self.updateGameState()
@@ -267,7 +259,6 @@ class Location:
             self.winning = "Enemy"
         else:
             self.winning = "Tie"
-        print("Location ", self.locationNum, " winner: ", self.winning)
 
     def activateEndOfTurns(self, unitList):
         for unit in unitList:
@@ -283,10 +274,10 @@ class Location:
                 self.enemies.remove(card)
 
     def onPlayEffect(self, card):
-        print("Activated on play effect of location!")
+        pass
 
     def onRevealLocation(self):
-        print("Revealed location")
+        pass
 
     def changeLocation(self, newLocation):
         for unit in self.allies + self.enemies:

@@ -371,8 +371,7 @@ class GameState:
         )
 
     def format_board_state(self) -> str:
-        s = [f"=== Turn {self.status['turncounter']} ===",
-             f"Energy: Ally={self.status['allyenergy']}  Enemy={self.status['enemyenergy']}",
+        s = [f"Energy: Ally={self.status['allyenergy']}  Enemy={self.status['enemyenergy']}",
              f"Cubes: {self.status['cubes']} (temp: {self.status['tempcubes']})",
              f"Priority: {'Ally' if self.status['allypriority'] else 'Enemy'}", ""]
 
@@ -381,8 +380,14 @@ class GameState:
             s.append(self._format_location_state(loc))
 
         s.append("")
-        s.append(f"Ally hand:  {[c.name for c in self.status['allyhand']]}")
-        s.append(f"Enemy hand: {[c.name for c in self.status['enemyhand']]}")
+        s.append(
+            "Ally hand:  " +
+            str([f"{c.name}({c.cur_cost})" for c in self.status['allyhand']])
+        )
+        s.append(
+            "Enemy hand: " +
+            str([f"{c.name}({c.cur_cost})" for c in self.status['enemyhand']])
+        )
         return "\n".join(s)
 
     def print_board_state(self):

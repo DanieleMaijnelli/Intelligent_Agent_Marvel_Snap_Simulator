@@ -2,6 +2,8 @@ from Locations.Location import Location
 import Locations
 from flask import url_for, current_app
 import os
+
+
 class Card:
     def __init__(self, cost, power, name, ally, status):
         self.base_cost = cost
@@ -10,7 +12,7 @@ class Card:
         self.location = 0
         self.ally = ally
         self.cur_power = self.base_power
-        self.onreveal_buff = 0 
+        self.onreveal_buff = 0
         self.has_ongoing = False
         self.has_ongoing_buff = False
         self.status = status
@@ -21,7 +23,7 @@ class Card:
         self.ongoing_buff = 0
         self.ongoing_to_apply = []
         self.has_ongoing_buffpower = False
-        self.can_move = 0 
+        self.can_move = 0
         self.onslaught = True
         self.can_be_played = True
         self.moves_number = 0
@@ -32,16 +34,17 @@ class Card:
         self.cost = self.base_cost
         self.cur_cost = self.cost
         self.cost_ongoing = 0
+
     def __repr__(self):
         return self.name
-    
-    def onReveal(self,locationlist):
-        print("Revealed ",self.name)
-    
-    def playCard(self,location):
-        print("Played ",self.name, " in ", location.name)
-        self.location= location
-    
+
+    def onReveal(self, locationlist):
+        pass
+
+    def playCard(self, location):
+        print("Played ", self.name, " in ", location.name)
+        self.location = location
+
     def startOfTurn(self):
         pass
 
@@ -52,7 +55,7 @@ class Card:
         print("Destroyed ", self.name)
         return True
 
-    def updateCard(self,locationlist):
+    def updateCard(self, locationlist):
         self.canbedestroyed = True
         self.ongoing_buff = 0
         self.cost_ongoing = 0
@@ -60,30 +63,32 @@ class Card:
             print(buff.name)
             buff.ongoing(self)
         self.cur_cost = self.cost + self.cost_ongoing
-        if self.cur_cost <0: self.cur_cost = 0
+        if self.cur_cost < 0: self.cur_cost = 0
         self.cur_power = self.base_power + self.onreveal_buff + self.ongoing_buff
         self.ongoing_to_apply = []
 
     def nextCardBuff(self, card):
         pass
+
     def ongoing(self, locationlist):
         pass
 
     def onMove(self):
         pass
+
     def move(self, newloc):
         if self.ally:
             next = newloc.allies
-        else: 
+        else:
             next = newloc.enemies
-        
-        if len(next)<4 and newloc != self.location:
+
+        if len(next) < 4 and newloc != self.location:
             self.location.removeCard(self)
             self.location = newloc
             self.onMove()
             next.append(self)
             newloc.moveEffects(self)
-    
+
     def onCardBeingMoved(self, card):
         pass
 
@@ -97,12 +102,14 @@ class Card:
                 self.status["allyhand"].remove(self)
             elif not self.ally and self in self.status["enemyhand"]:
                 self.status["enemyhand"].remove(self)
-            if self.ally: self.status["alliesdiscarded"].append(self)
-            else: self.status["enemiesdiscarded"].append(self)
+            if self.ally:
+                self.status["alliesdiscarded"].append(self)
+            else:
+                self.status["enemiesdiscarded"].append(self)
             self.whenDiscarded()
         except:
             print("Card not in hand")
-    
+
     def whenDiscarded(self):
         pass
 
@@ -114,6 +121,3 @@ class Card:
         full_path = os.path.join(current_app.static_folder, image_path)
         print(full_path)
         return url_for('static', filename=image_path)
-
-
-
