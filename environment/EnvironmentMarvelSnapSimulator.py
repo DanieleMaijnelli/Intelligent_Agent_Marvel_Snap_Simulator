@@ -24,6 +24,7 @@ class TestEnvironmentMarvelSnapSimulator(ParallelEnv):
         self.action_spaces = {a: spaces.Discrete(MAX_ACTIONS) for a in self.agents}
 
         self.game = GameState(verbose)
+        self.game.reset()
         self._action_maps = {a: [] for a in self.agents}
 
     def reset(self, seed=None, options=None):

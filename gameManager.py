@@ -1,16 +1,10 @@
 import importlib
-import random
-import cards
 import Locations
 from Locations.Location import *
 from nanoid import generate
-import uuid
-import json
-import jsonschema
-import os
+import Decks
 import time
 from datetime import datetime
-import inspect
 
 
 class GameState:
@@ -143,23 +137,7 @@ class GameState:
 
             if was_added:
                 unit.playCard(self.locationList[selectedLoc])
-                move = {
-                    "move_id": str(uuid.uuid4()),
-                    "game_id": self.game_id,
-                    "player": "player1",
-                    "turn": self.status["turncounter"],
-                    "card_played": unit.name,
-                    "location": {
-                        "name": self.locationList[selectedLoc].name,
-                        "position": self.locationList[selectedLoc].locationNum,
-                        "ally_cards": [
-                            card.name for card in self.locationList[selectedLoc].allies
-                        ],
-                        "enemy_cards": [
-                            card.name for card in self.locationList[selectedLoc].enemies
-                        ],
-                    }
-                }
+
             return was_added
         else:
             unit = self.status["enemyhand"][unit_index]
@@ -174,23 +152,7 @@ class GameState:
 
             if was_added:
                 unit.playCard(self.locationList[selectedLoc])
-                move = {
-                    "move_id": str(uuid.uuid4()),
-                    "game_id": self.game_id,
-                    "player": "player2",
-                    "turn": self.status["turncounter"],
-                    "card_played": unit.name,
-                    "location": {
-                        "name": self.locationList[selectedLoc].name,
-                        "position": self.locationList[selectedLoc].locationNum,
-                        "ally_cards": [
-                            card.name for card in self.locationList[selectedLoc].enemies
-                        ],
-                        "enemy_cards": [
-                            card.name for card in self.locationList[selectedLoc].allies
-                        ],
-                    }
-                }
+
             return was_added
 
     def undoActions(self, turnAlly, hand):
@@ -215,12 +177,8 @@ class GameState:
                 i += 1
 
     def gameStart(self):
-        ALL_CARDS = [
-            cls for name, cls in inspect.getmembers(cards, inspect.isclass)
-            if cls.__module__.startswith("cards") and cls is not cards.Card
-        ]
-        player_deck_classes = random.sample(ALL_CARDS, 12)
-        enemy_deck_classes = random.sample(ALL_CARDS, 12)
+        player_deck_classes = Decks.form_random_basic_deck()
+        enemy_deck_classes = Decks.form_random_basic_deck()
         self.game_id = str(generate(size=10))
         self.game = {
             "game_id": self.game_id,
@@ -372,8 +330,7 @@ class GameState:
 
     def format_board_state(self) -> str:
         s = [f"Energy: Ally={self.status['allyenergy']}  Enemy={self.status['enemyenergy']}",
-             f"Cubes: {self.status['cubes']} (temp: {self.status['tempcubes']})",
-             f"Priority: {'Ally' if self.status['allypriority'] else 'Enemy'}", ""]
+             f"Cubes: {self.status['cubes']} (temp: {self.status['tempcubes']})"]
 
         for key in ["location1", "location2", "location3"]:
             loc = self.locationList[key]
