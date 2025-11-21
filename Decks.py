@@ -7,6 +7,8 @@ ALL_CARDS = [
     if cls.__module__.startswith("cards") and cls is not cards.Card
 ]
 
+CLASS_TO_INDEX = {cls: idx for idx, cls in enumerate(ALL_CARDS)}
+
 
 def form_random_deck():
     deck = random.sample(ALL_CARDS, 12)

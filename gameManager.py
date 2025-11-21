@@ -159,7 +159,7 @@ class GameState:
         loc1temp = self.locationList["location1"].undoActions(turnAlly)
         loc2temp = self.locationList["location2"].undoActions(turnAlly)
         loc3temp = self.locationList["location3"].undoActions(turnAlly)
-        self.log("temps:", loc1temp, loc2temp, loc3temp)
+        self.log(f"temps: {loc1temp} {loc2temp} {loc3temp}")
         refund = 0
         for unit in loc1temp + loc2temp + loc3temp:
             refund += unit.cur_cost
