@@ -245,6 +245,8 @@ class GameState:
             card.updateCard(self.locationList)
         self.draw(self.status["allyhand"], self.status["allydeck"], 1)
         self.draw(self.status["enemyhand"], self.status["enemydeck"], 1)
+        self.status['allypass'] = False
+        self.status['enemypass'] = False
 
     def endOfTurn(self):
         if not (self.passStatus["retreatally"] or self.passStatus["retreatenemy"]): self.status["cubes"] = self.status[

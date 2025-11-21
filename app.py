@@ -160,8 +160,6 @@ def endGame(allyorenemy):
 def startOfTurn():
     print("start of turn")
     game.startOfTurn()
-    game.status['allypass'] = False
-    game.status['enemypass'] = False
     game.status['endofturncounterally'] = 0
     game.status['endofturncounterenemy'] = 0
     game.passStatus = {
