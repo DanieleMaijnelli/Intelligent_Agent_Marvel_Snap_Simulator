@@ -113,10 +113,10 @@ class MarvelSnapSingleAgentEnv(gym.Env):
                         reward += card.cur_power
                         break
         else:
-            reward -= 10.0
+            reward -= 3.0
 
         if self.game_state.status["allypass"] and self.game_state.status["enemypass"]:
-            reward -= self.game_state.status["allymaxenergy"] - self.game_state.status["allyenergy"]
+            reward -= self.game_state.status["allyenergy"]
             self.game_state.turnEnd(True)
             if self.game_state.game_end:
                 for location in self.game_state.locationList.values():

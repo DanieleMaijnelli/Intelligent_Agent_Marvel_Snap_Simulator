@@ -5,7 +5,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 from gameManager import GameState
 from environment.SingleAgentEnvironmentMarvelSnapSimulator import MarvelSnapSingleAgentEnv
 
-SEED = 42
+SEED = 43
 
 
 def make_env():
@@ -39,12 +39,12 @@ def train_dqn(total_timesteps=200_000):
         learning_rate=1e-4,
         buffer_size=200_000,
         batch_size=64,
-        gamma=0.99,
+        gamma=0.95,
         train_freq=4,
         gradient_steps=1,
         target_update_interval=10_000,
         learning_starts=10_000,
-        exploration_fraction=0.3,
+        exploration_fraction=0.4,
         exploration_initial_eps=1.0,
         exploration_final_eps=0.05,
         seed=SEED,
@@ -55,7 +55,7 @@ def train_dqn(total_timesteps=200_000):
     return model
 
 
-def evaluate_model(model, n_episodes=10):
+def evaluate_model(model, n_episodes=5):
     environment = MarvelSnapSingleAgentEnv(GameState(verbose=True))
     for episode in range(n_episodes):
         observation, info = environment.reset()
@@ -71,4 +71,9 @@ def evaluate_model(model, n_episodes=10):
 
 if __name__ == "__main__":
     model = train_dqn(total_timesteps=300_000)
-    evaluate_model(model, n_episodes=5)
+    evaluate_model(model, n_episodes=3)
+
+# Se il modello esiste già usa questa versione
+'''if __name__ == "__main__":
+    model = DQN.load("marvelsnap_single_agent_dqn_last")
+    evaluate_model(model, n_episodes=5)'''
