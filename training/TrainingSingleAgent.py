@@ -39,12 +39,12 @@ def train_dqn(total_timesteps=200_000):
         learning_rate=1e-4,
         buffer_size=200_000,
         batch_size=64,
-        gamma=0.95,
+        gamma=0.9,
         train_freq=4,
         gradient_steps=1,
         target_update_interval=10_000,
-        learning_starts=10_000,
-        exploration_fraction=0.4,
+        learning_starts=20_000,
+        exploration_fraction=0.5,
         exploration_initial_eps=1.0,
         exploration_final_eps=0.05,
         seed=SEED,
@@ -69,11 +69,11 @@ def evaluate_model(model, n_episodes=5):
         print(f"Episode {episode + 1}: total reward = {episode_reward}")
 
 
-if __name__ == "__main__":
-    model = train_dqn(total_timesteps=300_000)
-    evaluate_model(model, n_episodes=3)
+'''if __name__ == "__main__":
+    model = train_dqn(total_timesteps=2_000_000)
+    evaluate_model(model, n_episodes=3)'''
 
 # Se il modello esiste già usa questa versione
-'''if __name__ == "__main__":
+if __name__ == "__main__":
     model = DQN.load("marvelsnap_single_agent_dqn_last")
-    evaluate_model(model, n_episodes=5)'''
+    evaluate_model(model, n_episodes=5)
