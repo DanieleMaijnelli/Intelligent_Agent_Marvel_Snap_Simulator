@@ -19,36 +19,36 @@ def form_random_basic_deck():
     basic_decks = [[
         "Elektra",
         "Nightcrawler",
-        "Squirrel Girl",
-        "Mister Sinister",
+        "Squirrelgirl",
+        "Mistersinister",
         "Cable",
         "Ironheart",
         "Wolfsbane",
-        "Jessica Jones",
-        "White Tiger",
-        "Blue Marvel",
+        "Jessicajones",
+        "Whitetiger",
+        "Bluemarvel",
         "Enchantress",
         "Odin"
     ], [
         "Antman",
         "Elektra",
         "Nightcrawler",
-        "Squirrel Girl",
+        "Squirrelgirl",
         "Blade",
         "Angela",
         "Wolverine",
-        "Strong Guy",
-        "Lady Sif",
-        "Sword Master",
+        "Strongguy",
+        "Ladysif",
+        "Swordmaster",
         "Kazar",
-        "Blue Marvel"
+        "Bluemarvel"
     ], [
         "Antman",
         "Nightcrawler",
         "Angela",
         "Armor",
         "Colossus",
-        "Mr Fantastic",
+        "Mrfantastic",
         "Cosmo",
         "Namor",
         "Ironman",
@@ -57,8 +57,8 @@ def form_random_basic_deck():
         "Onslaught"
     ], [
         "Nova",
-        "Agent 13",
-        "Bucky Barnes",
+        "Agent13",
+        "Buckybarnes",
         "Carnage",
         "Sabretooth",
         "Cable",
@@ -66,8 +66,8 @@ def form_random_basic_deck():
         "Wolverine",
         "Killmonger",
         "Deathlok",
-        "Moon Girl",
-        "Devil Dinosaur"
+        "Moongirl",
+        "Devildinosaur"
     ]]
 
     chosen_deck = random.choice(basic_decks)

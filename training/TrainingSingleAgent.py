@@ -44,18 +44,18 @@ def train_dqn(total_timesteps=200_000):
         gradient_steps=1,
         target_update_interval=10_000,
         learning_starts=20_000,
-        exploration_fraction=0.5,
+        exploration_fraction=0.4,
         exploration_initial_eps=1.0,
         exploration_final_eps=0.05,
         seed=SEED,
     )
 
     model.learn(total_timesteps=total_timesteps, callback=eval_callback)
-    model.save("marvelsnap_single_agent_dqn_last")
+    model.save(f"marvelsnap_single_agent_dqn_{total_timesteps}")
     return model
 
 
-def evaluate_model(model, n_episodes=5):
+'''def evaluate_model(model, n_episodes=5):
     environment = MarvelSnapSingleAgentEnv(GameState(verbose=True))
     for episode in range(n_episodes):
         observation, info = environment.reset()
@@ -66,14 +66,61 @@ def evaluate_model(model, n_episodes=5):
             observation, reward, terminated, truncated, info = environment.step(action)
             episode_reward += reward
             done = terminated or truncated
-        print(f"Episode {episode + 1}: total reward = {episode_reward}")
+        print(f"Episode {episode + 1}: total reward = {episode_reward}")'''
+
+
+def evaluate_model(model, n_episodes=100):
+    environment = MarvelSnapSingleAgentEnv(GameState(verbose=True))
+
+    wins = 0
+    losses = 0
+    ties = 0
+
+    for episode in range(n_episodes):
+        observation, info = environment.reset()
+        done = False
+        episode_reward = 0.0
+
+        while not done:
+            action, _ = model.predict(observation, deterministic=True)
+            observation, reward, terminated, truncated, info = environment.step(action)
+            episode_reward += reward
+            done = terminated or truncated
+
+        winner = environment.game_state.passStatus["winner"]
+
+        if winner == "Ally":
+            wins += 1
+        elif winner == "Enemy":
+            losses += 1
+        elif winner == "Tie":
+            ties += 1
+
+        print(f"Episode {episode + 1}: total reward = {episode_reward}, winner = {winner}")
+
+    # Statistiche finali
+    print("\n=== Evaluation summary ===")
+    print(f"Episodes: {n_episodes}")
+    print(f"Wins:     {wins}")
+    print(f"Losses:   {losses}")
+    print(f"Ties:     {ties}")
+
+    if n_episodes > 0:
+        win_rate_all = wins / n_episodes
+        print(f"Win rate (including ties): {win_rate_all:.2%}")
+
+    if (wins + losses) > 0:
+        win_rate_no_ties = wins / (wins + losses)
+        print(f"Win rate (excluding ties): {win_rate_no_ties:.2%}")
+    else:
+        print("No decisive games (only ties).")
 
 
 '''if __name__ == "__main__":
-    model = train_dqn(total_timesteps=2_000_000)
+    model = train_dqn(total_timesteps=2_500_000)
     evaluate_model(model, n_episodes=3)'''
 
 # Se il modello esiste già usa questa versione
 if __name__ == "__main__":
-    model = DQN.load("marvelsnap_single_agent_dqn_last")
-    evaluate_model(model, n_episodes=5)
+    model = DQN.load("marvelsnap_single_agent_dqn_3000000")
+    evaluate_model(model, n_episodes=10000)

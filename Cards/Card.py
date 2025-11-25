@@ -60,7 +60,6 @@ class Card:
         self.ongoing_buff = 0
         self.cost_ongoing = 0
         for buff in self.ongoing_to_apply:
-            print(buff.name)
             buff.ongoing(self)
         self.cur_cost = self.cost + self.cost_ongoing
         if self.cur_cost < 0: self.cur_cost = 0
