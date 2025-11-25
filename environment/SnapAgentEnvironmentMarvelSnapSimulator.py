@@ -11,6 +11,7 @@ class MarvelSnapSingleSnapAgentEnv(gym.Env):
         self.game_state = game_state
         self.card_pool_list = Decks.ALL_CARDS
         self.number_of_cards = len(self.card_pool_list)
+        self.PLAYERS_ACTION_SPACE_LENGTH = 3 * self.number_of_cards + 1
         self.observation_space = spaces.Box(
             low=-100.0,
             high=100.0,
@@ -48,12 +49,41 @@ class MarvelSnapSingleSnapAgentEnv(gym.Env):
 
         return owned_cards_vector
 
+    def can_play(self, ally: bool, card, location):
+        if ally:
+            energy = self.game_state.status["allyenergy"]
+            energy_check = card.cur_cost <= energy
+            location_check = (not location.checkIfLocationFull(ally)) and location.can_play_cards_allies
+            unit_check = location.canCardBePlayed(card)
+            return energy_check and location_check and unit_check
+        else:
+            energy = self.game_state.status["enemyenergy"]
+            energy_check = card.cur_cost <= energy
+            location_check = (not location.checkIfLocationFull(ally)) and location.can_play_cards_enemies
+            unit_check = location.canCardBePlayed(card)
+            return energy_check and location_check and unit_check
+
+    def build_action_mask(self, is_ally):
+        action_mask = numpy.zeros(self.PLAYERS_ACTION_SPACE_LENGTH, dtype=numpy.int8)
+        hand = self.game_state.status["allyhand"] if is_ally else self.game_state.status["enemyhand"]
+        location_dictionary = self.game_state.locationList
+
+        for card in hand:
+            card_index = Decks.CLASS_TO_INDEX[card.__class__]
+            for location_index, location_key in enumerate(["location1", "location2", "location3"]):
+                location = location_dictionary[location_key]
+                if self.can_play(is_ally, card, location):
+                    action_index = (card_index * 3) + location_index
+                    action_mask[action_index] = 1
+        action_mask[self.PLAYERS_ACTION_SPACE_LENGTH - 1] = 1
+        return action_mask
+
     def play_randomly(self, is_ally):
         while not self.game_state.status["enemypass"]:
             enemy_action_mask = self.build_action_mask(False)
             valid_actions = numpy.flatnonzero(enemy_action_mask)
             random_valid_action = numpy.random.choice(valid_actions)
-            if random_valid_action == (self.ACTION_SPACE_LENGTH - 1):
+            if random_valid_action == (self.PLAYERS_ACTION_SPACE_LENGTH - 1):
                 self.game_state.status["enemypass"] = True
                 break
 

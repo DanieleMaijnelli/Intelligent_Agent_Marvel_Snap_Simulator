@@ -3,12 +3,14 @@ import random
 import os, importlib, inspect
 import flask
 
+
 class Agent13(Card):
     def __init__(self, ally, status):
         super().__init__(1, 2, "Agent 13", ally, status)
         self.description = "On Reveal: Add a random card to your hand."
+
     def randomCard(self):
-        location_folder = os.path.dirname(__file__)  # Percorso del file Location.py
+        location_folder = os.path.dirname(__file__)
         files = [
             f for f in os.listdir(location_folder)
             if f.endswith(".py") and f != "Card.py" and not f.startswith("__")
@@ -26,10 +28,10 @@ class Agent13(Card):
         return random_card(self.ally, self.status)
 
     def onReveal(self, locationlist):
-        if self.ally: 
+        if self.ally:
             self.status["allyhand"].append(self.randomCard())
         else:
             self.status["enemyhand"].append(self.randomCard())
-    
+
     def render(self):
         return flask.url_for('static', filename='assets/Agent13.webp')

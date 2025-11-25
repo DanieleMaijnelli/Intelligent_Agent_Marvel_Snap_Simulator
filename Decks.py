@@ -77,3 +77,9 @@ def form_random_basic_deck():
         if cls.__name__ in chosen_deck
     ]
     return deck
+
+
+'''for i in range(10):
+    deck = form_random_basic_deck()
+    print(deck)
+    print(len(deck))'''

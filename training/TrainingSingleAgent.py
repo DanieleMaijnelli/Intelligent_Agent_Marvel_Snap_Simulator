@@ -43,7 +43,7 @@ def train_dqn(total_timesteps=200_000):
         train_freq=4,
         gradient_steps=1,
         target_update_interval=10_000,
-        learning_starts=20_000,
+        learning_starts=30_000,
         exploration_fraction=0.4,
         exploration_initial_eps=1.0,
         exploration_final_eps=0.05,
@@ -53,20 +53,6 @@ def train_dqn(total_timesteps=200_000):
     model.learn(total_timesteps=total_timesteps, callback=eval_callback)
     model.save(f"marvelsnap_single_agent_dqn_{total_timesteps}")
     return model
-
-
-'''def evaluate_model(model, n_episodes=5):
-    environment = MarvelSnapSingleAgentEnv(GameState(verbose=True))
-    for episode in range(n_episodes):
-        observation, info = environment.reset()
-        done = False
-        episode_reward = 0.0
-        while not done:
-            action, _ = model.predict(observation, deterministic=True)
-            observation, reward, terminated, truncated, info = environment.step(action)
-            episode_reward += reward
-            done = terminated or truncated
-        print(f"Episode {episode + 1}: total reward = {episode_reward}")'''
 
 
 def evaluate_model(model, n_episodes=100):
@@ -98,7 +84,6 @@ def evaluate_model(model, n_episodes=100):
 
         print(f"Episode {episode + 1}: total reward = {episode_reward}, winner = {winner}")
 
-    # Statistiche finali
     print("\n=== Evaluation summary ===")
     print(f"Episodes: {n_episodes}")
     print(f"Wins:     {wins}")
@@ -116,11 +101,11 @@ def evaluate_model(model, n_episodes=100):
         print("No decisive games (only ties).")
 
 
-'''if __name__ == "__main__":
-    model = train_dqn(total_timesteps=2_500_000)
-    evaluate_model(model, n_episodes=3)'''
+if __name__ == "__main__":
+    model = train_dqn(total_timesteps=2_900_001)
+    evaluate_model(model, n_episodes=10000)
 
 # Se il modello esiste già usa questa versione
-if __name__ == "__main__":
-    model = DQN.load("marvelsnap_single_agent_dqn_3000000")
-    evaluate_model(model, n_episodes=10000)
+'''if __name__ == "__main__":
+    model = DQN.load("marvelsnap_single_agent_dqn_2900000")
+    evaluate_model(model, n_episodes=10000)'''

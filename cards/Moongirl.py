@@ -1,18 +1,23 @@
 from cards import Card
 import copy
 
+
 class Moongirl(Card):
     def __init__(self, ally, status):
         super().__init__(4, 5, "Moongirl", ally, status)
         self.description = "On Reveal: Duplicate your hand."
-    
+
     def onReveal(self, locationlist):
-        temparray = []
         if self.ally:
-            for card in self.status["allyhand"]:
-                temparray.append(copy.deepcopy(card))
-            self.status["allyhand"]+= temparray
+            hand = self.status["allyhand"]
         else:
-            for card in self.status["enemyhand"]:
-                temparray.append(copy.deepcopy(card))
-            self.status["enemyhand"]+= temparray
+            hand = self.status["enemyhand"]
+
+        original_cards = list(hand)
+
+        for card in original_cards:
+            if len(hand) >= 7:
+                break
+            new_card = copy.deepcopy(card)
+            new_card.status = self.status
+            hand.append(copy.deepcopy(new_card))

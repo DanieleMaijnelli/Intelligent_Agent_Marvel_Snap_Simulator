@@ -1,5 +1,6 @@
 from cards import Card
 
+
 class Squirrelgirl(Card):
     def __init__(self, ally, status):
         super().__init__(1, 2, "Squirrel Girl", ally, status)
@@ -9,7 +10,7 @@ class Squirrelgirl(Card):
         def __init__(self, ally, status):
             super().__init__(1, 1, "Squirrel", ally, status)
             self.description = "Squeak!"
-        
+
     def onReveal(self, locationlist):
         if self.ally:
             for location in locationlist.values():

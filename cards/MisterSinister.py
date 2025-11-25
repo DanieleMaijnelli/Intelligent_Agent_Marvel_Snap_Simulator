@@ -1,5 +1,6 @@
 from cards import Card
 
+
 class Mistersinister(Card):
     def __init__(self, ally, status):
         super().__init__(2, 2, "Mister Sinister", ally, status)

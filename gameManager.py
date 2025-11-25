@@ -298,7 +298,7 @@ class GameState:
         self.game['end_time'] = datetime.utcfromtimestamp(time.time()).isoformat() + "Z"
 
     def turnEnd(self, training):
-        last_turn = (self.status["turncounter"] == self.status["maxturns"])
+        last_turn = (self.status["turncounter"] >= self.status["maxturns"])
         self.endOfTurn()
         self.passStatus['turnend'] = True
         if training and last_turn:
