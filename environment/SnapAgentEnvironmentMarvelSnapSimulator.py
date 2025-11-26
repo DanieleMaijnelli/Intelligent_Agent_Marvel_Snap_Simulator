@@ -1,7 +1,6 @@
 import gymnasium as gym
 from gymnasium import spaces
-import numpy
-import Decks
+from UtilityFunctions import *
 
 
 class MarvelSnapSingleSnapAgentEnv(gym.Env):
@@ -49,50 +48,6 @@ class MarvelSnapSingleSnapAgentEnv(gym.Env):
 
         return owned_cards_vector
 
-    def can_play(self, ally: bool, card, location):
-        if ally:
-            energy = self.game_state.status["allyenergy"]
-            energy_check = card.cur_cost <= energy
-            location_check = (not location.checkIfLocationFull(ally)) and location.can_play_cards_allies
-            unit_check = location.canCardBePlayed(card)
-            return energy_check and location_check and unit_check
-        else:
-            energy = self.game_state.status["enemyenergy"]
-            energy_check = card.cur_cost <= energy
-            location_check = (not location.checkIfLocationFull(ally)) and location.can_play_cards_enemies
-            unit_check = location.canCardBePlayed(card)
-            return energy_check and location_check and unit_check
-
-    def build_action_mask(self, is_ally):
-        action_mask = numpy.zeros(self.PLAYERS_ACTION_SPACE_LENGTH, dtype=numpy.int8)
-        hand = self.game_state.status["allyhand"] if is_ally else self.game_state.status["enemyhand"]
-        location_dictionary = self.game_state.locationList
-
-        for card in hand:
-            card_index = Decks.CLASS_TO_INDEX[card.__class__]
-            for location_index, location_key in enumerate(["location1", "location2", "location3"]):
-                location = location_dictionary[location_key]
-                if self.can_play(is_ally, card, location):
-                    action_index = (card_index * 3) + location_index
-                    action_mask[action_index] = 1
-        action_mask[self.PLAYERS_ACTION_SPACE_LENGTH - 1] = 1
-        return action_mask
-
-    def play_randomly(self, is_ally):
-        while not self.game_state.status["enemypass"]:
-            enemy_action_mask = self.build_action_mask(False)
-            valid_actions = numpy.flatnonzero(enemy_action_mask)
-            random_valid_action = numpy.random.choice(valid_actions)
-            if random_valid_action == (self.PLAYERS_ACTION_SPACE_LENGTH - 1):
-                self.game_state.status["enemypass"] = True
-                break
-
-            card_type, location_number = self.decode_action_index(random_valid_action)
-            for card_index, card in enumerate(self.game_state.status["enemyhand"]):
-                if isinstance(card, card_type):
-                    self.game_state.addUnit(card_index, False, location_number)
-                    break
-
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         self.game_state.reset()
@@ -105,32 +60,8 @@ class MarvelSnapSingleSnapAgentEnv(gym.Env):
         truncated_flag = False
         reward = 0.0
         integer_action = int(action)
-        self.play_enemy()
-        if self.build_action_mask(True)[integer_action] == 1:
-            if integer_action == (self.ACTION_SPACE_LENGTH - 1):
-                self.game_state.status["allypass"] = True
-            else:
-                card_type, location_number = self.decode_action_index(integer_action)
-                for card_index, card in enumerate(self.game_state.status["allyhand"]):
-                    if isinstance(card, card_type):
-                        self.game_state.addUnit(card_index, True, location_number)
-                        reward += 3.0
-                        reward += card.cur_power / 2.0
-                        break
-        else:
-            reward -= 1.0
-            self.game_state.status["allypass"] = True
 
-        if self.game_state.status["allypass"] and self.game_state.status["enemypass"]:
-            reward -= self.game_state.status["allyenergy"]
-            self.game_state.turnEnd(True)
-            if self.game_state.game_end:
-                for location in self.game_state.locationList.values():
-                    if location.alliesPower > location.enemiesPower:
-                        reward += 3.0
-                    elif location.alliesPower < location.enemiesPower:
-                        reward -= 3.0
-                terminated_flag = True
+        play_randomly(self.game_state, False, self.PLAYERS_ACTION_SPACE_LENGTH, self.card_pool_list)
 
         observation_array = self.get_observation_array()
         info_dictionary = {}

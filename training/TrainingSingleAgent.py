@@ -72,7 +72,6 @@ def evaluate_model(model, n_episodes=100):
             observation, reward, terminated, truncated, info = environment.step(action)
             episode_reward += reward
             done = terminated or truncated
-
         winner = environment.game_state.passStatus["winner"]
 
         if winner == "Ally":
@@ -102,10 +101,10 @@ def evaluate_model(model, n_episodes=100):
 
 
 if __name__ == "__main__":
-    model = train_dqn(total_timesteps=5_000_000)
+    model = train_dqn(total_timesteps=4_000_000)
     evaluate_model(model, n_episodes=10000)
 
 # Se il modello esiste già usa questa versione
 '''if __name__ == "__main__":
-    model = DQN.load("marvelsnap_single_agent_dqn_3800000")
+    model = DQN.load("marvelsnap_single_agent_dqn_5000000")
     evaluate_model(model, n_episodes=10000)'''
