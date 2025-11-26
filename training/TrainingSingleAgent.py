@@ -39,7 +39,7 @@ def train_dqn(total_timesteps=200_000):
         learning_rate=1e-4,
         buffer_size=200_000,
         batch_size=64,
-        gamma=0.9,
+        gamma=0.99,
         train_freq=4,
         gradient_steps=1,
         target_update_interval=10_000,
@@ -102,10 +102,10 @@ def evaluate_model(model, n_episodes=100):
 
 
 if __name__ == "__main__":
-    model = train_dqn(total_timesteps=2_900_001)
+    model = train_dqn(total_timesteps=5_000_000)
     evaluate_model(model, n_episodes=10000)
 
 # Se il modello esiste già usa questa versione
 '''if __name__ == "__main__":
-    model = DQN.load("marvelsnap_single_agent_dqn_2900000")
+    model = DQN.load("marvelsnap_single_agent_dqn_3800000")
     evaluate_model(model, n_episodes=10000)'''
