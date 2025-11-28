@@ -41,22 +41,22 @@ class MarvelSnapSingleAgentEnv(gym.Env):
                     if isinstance(card, card_type):
                         if not self.game_state.addUnit(card_index, True, location_number):
                             continue
-                        reward += 1.0
-                        reward += card.cur_power / 2.0
+                        reward += 1.5
+                        reward += card.cur_power / 1.5
                         break
         else:
             reward -= 1.0
             self.game_state.status["allypass"] = True
 
         if self.game_state.status["allypass"] and self.game_state.status["enemypass"]:
-            reward -= (self.game_state.status["allyenergy"] / 4.0)
+            reward -= (self.game_state.status["allyenergy"] / 3.0)
             self.game_state.turnEnd(True)
 
             for location in self.game_state.locationList.values():
                 if location.alliesPower > location.enemiesPower:
-                    reward += 0.5
+                    reward += 0.75
                 elif location.alliesPower < location.enemiesPower:
-                    reward -= 0.5
+                    reward -= 0.75
 
             if self.game_state.game_end:
                 if self.game_state.passStatus["winner"] == "Ally":

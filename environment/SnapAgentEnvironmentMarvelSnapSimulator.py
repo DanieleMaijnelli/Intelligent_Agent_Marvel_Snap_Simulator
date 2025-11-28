@@ -32,8 +32,10 @@ class MarvelSnapSingleSnapAgentEnv(gym.Env):
         reward = 0.0
         integer_action = int(action)
 
+        play_randomly(self.game_state, True, self.PLAYERS_ACTION_SPACE_LENGTH, self.card_pool_list)
         play_randomly(self.game_state, False, self.PLAYERS_ACTION_SPACE_LENGTH, self.card_pool_list)
         observation_array = get_observation_array_snap_agent(self.game_state, self.number_of_cards)
+
 
         info_dictionary = {}
         return observation_array, reward, terminated_flag, truncated_flag, info_dictionary
