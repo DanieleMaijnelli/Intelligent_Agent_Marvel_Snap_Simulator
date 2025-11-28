@@ -108,7 +108,7 @@ def play_randomly(game_state, is_ally: bool, action_space_length, card_pool_list
 
         for card_index, card in enumerate(game_state.status[hand_key]):
             if isinstance(card, card_type):
-                if not game_state.addUnit(card_index, False, location_number):
+                if not game_state.addUnit(card_index, is_ally, location_number):
                     continue
                 break
 
