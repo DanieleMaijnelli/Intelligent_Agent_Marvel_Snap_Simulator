@@ -1,3 +1,5 @@
+import random
+
 import numpy
 import Decks
 
@@ -34,6 +36,7 @@ def get_observation_array_snap_agent(game_state, number_of_cards):
     feature_list.append(1.0 if status_dictionary["allypriority"] else 0.0)
     feature_list.append(float(status_dictionary["cubes"]) / 8.0)
     feature_list.append(float(status_dictionary["tempcubes"]) / 8.0)
+    feature_list.append(1.0 if status_dictionary["allysnapped"] else 0.0)
 
     features = numpy.array(feature_list, dtype=numpy.float32)
     action_mask = build_owned_cards_vector(game_state, True, number_of_cards).astype(numpy.float32)
@@ -109,3 +112,11 @@ def play_randomly(game_state, is_ally: bool, action_space_length, card_pool_list
                 if not game_state.addUnit(card_index, False, location_number):
                     continue
                 break
+
+
+def snap_randomly(game_state, is_ally: bool, snap_probability):
+    if random.random() < snap_probability:
+        if is_ally:
+            game_state.snap(True)
+        else:
+            game_state.snap(False)
