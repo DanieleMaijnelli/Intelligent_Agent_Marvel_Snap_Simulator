@@ -34,7 +34,7 @@ def train_dqn(total_timesteps=200_000):
     model = DQN(
         "MlpPolicy",
         vectorized_environment,
-        verbose=1,
+        verbose=0,
         tensorboard_log="./tensorboard_marvelsnap_dqn/",
         learning_rate=1e-4,
         buffer_size=200_000,

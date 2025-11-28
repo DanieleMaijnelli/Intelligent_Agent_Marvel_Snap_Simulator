@@ -19,9 +19,7 @@ class Jessicajones(Card):
             for cardPlayed in self.status["cardsplayed"]:
                 if cardPlayed[1] == self.turnToCheck and cardPlayed[2] == self.locationNumToCheck and cardPlayed[
                     0].ally == self.ally:
-                    print("You played a card here this turn")
                     check = False
                     break
             if check:
-                print("Buffing Jessica Jones!")
                 self.onreveal_buff += 5 * self.onRevealNum

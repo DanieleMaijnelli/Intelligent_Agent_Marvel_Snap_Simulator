@@ -2,7 +2,7 @@ import numpy
 import Decks
 
 
-def get_observation_array(game_state, action_mask_length):
+def get_observation_array_single_agent(game_state, action_mask_length):
     status_dictionary = game_state.status
     location_dictionary = game_state.locationList
     feature_list = []
@@ -16,6 +16,27 @@ def get_observation_array(game_state, action_mask_length):
 
     features = numpy.array(feature_list, dtype=numpy.float32)
     action_mask = build_player_action_mask(game_state, True, action_mask_length).astype(numpy.float32)
+    return numpy.concatenate([features, action_mask], axis=0)
+
+
+def get_observation_array_snap_agent(game_state, number_of_cards):
+    status_dictionary = game_state.status
+    location_dictionary = game_state.locationList
+    feature_list = []
+    for location_key in ["location1", "location2", "location3"]:
+        location = location_dictionary[location_key]
+        feature_list.append(float(location.alliesPower) / 10.0)
+        feature_list.append(float(location.enemiesPower) / 10.0)
+        feature_list.append(float(len(location.allies)) / 4.0)
+        feature_list.append(float(len(location.enemies)) / 4.0)
+    feature_list.append(float(status_dictionary["allyenergy"]) / 10.0)
+    feature_list.append(float(status_dictionary["turncounter"]) / 7.0)
+    feature_list.append(1.0 if status_dictionary["allypriority"] else 0.0)
+    feature_list.append(float(status_dictionary["cubes"]) / 8.0)
+    feature_list.append(float(status_dictionary["tempcubes"]) / 8.0)
+
+    features = numpy.array(feature_list, dtype=numpy.float32)
+    action_mask = build_owned_cards_vector(game_state, True, number_of_cards).astype(numpy.float32)
     return numpy.concatenate([features, action_mask], axis=0)
 
 
@@ -33,6 +54,16 @@ def build_player_action_mask(game_state, is_ally, action_mask_length):
                 action_mask[action_index] = 1
     action_mask[action_mask_length - 1] = 1
     return action_mask
+
+
+def build_owned_cards_vector(game_state, is_ally, number_of_cards):
+    owned_cards_vector = numpy.zeros(number_of_cards, dtype=numpy.int8)
+    hand = game_state.status["allyhand"] if is_ally else game_state.status["enemyhand"]
+    for card in hand:
+        card_index = Decks.CLASS_TO_INDEX[card.__class__]
+        owned_cards_vector[card_index] += 1
+
+    return owned_cards_vector
 
 
 def decode_action_index(action_index, card_pool_list):

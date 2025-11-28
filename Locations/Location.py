@@ -100,7 +100,6 @@ class Location:
                 print("location full")
             return False
 
-    # controlla se la location è full o meno in base a chi sta giocando controllando le carte che stanno per essere giocate + quelle già giocate e quelle che si devono muovere
     def checkIfLocationFull(self, ally: bool):
         full = False
         num = 0

@@ -22,7 +22,7 @@ class MarvelSnapSingleAgentEnv(gym.Env):
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         self.game_state.reset()
-        observation_array = get_observation_array(self.game_state, self.ACTION_SPACE_LENGTH)
+        observation_array = get_observation_array_single_agent(self.game_state, self.ACTION_SPACE_LENGTH)
         info_dictionary = {}
         return observation_array, info_dictionary
 
@@ -60,11 +60,11 @@ class MarvelSnapSingleAgentEnv(gym.Env):
 
             if self.game_state.game_end:
                 if self.game_state.passStatus["winner"] == "Ally":
-                    reward += 3.0
+                    reward += 5.0
                 elif self.game_state.passStatus["winner"] == "Enemy":
-                    reward -= 3.0
+                    reward -= 5.0
                 terminated_flag = True
 
-        observation_array = get_observation_array(self.game_state, self.ACTION_SPACE_LENGTH)
+        observation_array = get_observation_array_single_agent(self.game_state, self.ACTION_SPACE_LENGTH)
         info_dictionary = {}
         return observation_array, reward, terminated_flag, truncated_flag, info_dictionary

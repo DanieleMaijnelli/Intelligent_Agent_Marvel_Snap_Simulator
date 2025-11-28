@@ -42,7 +42,7 @@ class Card:
         pass
 
     def playCard(self, location):
-        print("Played ", self.name, " in ", location.name)
+        #print("Played ", self.name, " in ", location.name)
         self.location = location
 
     def startOfTurn(self):
@@ -52,7 +52,7 @@ class Card:
         pass
 
     def whenDestroyed(self, locationlist):
-        print("Destroyed ", self.name)
+        #print("Destroyed ", self.name)
         return True
 
     def updateCard(self, locationlist):
@@ -95,7 +95,7 @@ class Card:
         pass
 
     def discard(self):
-        print("Discarding ", self.name)
+        #print("Discarding ", self.name)
         try:
             if self.ally and self in self.status["allyhand"]:
                 self.status["allyhand"].remove(self)
