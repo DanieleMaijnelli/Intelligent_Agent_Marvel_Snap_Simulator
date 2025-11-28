@@ -1,6 +1,6 @@
 import gymnasium as gym
 from gymnasium import spaces
-from UtilityFunctions import *
+from environment.UtilityFunctions import *
 
 
 class MarvelSnapSingleSnapAgentEnv(gym.Env):
