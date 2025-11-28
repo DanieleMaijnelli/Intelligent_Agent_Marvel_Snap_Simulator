@@ -56,4 +56,4 @@ def train_dqn(total_timesteps=200_000):
 
 
 if __name__ == "__main__":
-    model = train_dqn(total_timesteps=1_000_000)
+    model = train_dqn(total_timesteps=3_500_000)
