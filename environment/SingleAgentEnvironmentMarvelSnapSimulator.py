@@ -55,15 +55,15 @@ class MarvelSnapSingleAgentEnv(gym.Env):
 
             for location in self.game_state.locationList.values():
                 if location.alliesPower > location.enemiesPower:
-                    reward += 0.75
+                    reward += 0.5
                 elif location.alliesPower < location.enemiesPower:
-                    reward -= 0.75
+                    reward -= 0.5
 
             if self.game_state.game_end:
                 if self.game_state.passStatus["winner"] == "Ally":
-                    reward += 5.0
+                    reward += 7.0
                 elif self.game_state.passStatus["winner"] == "Enemy":
-                    reward -= 5.0
+                    reward -= 7.0
                 terminated_flag = True
 
         observation_array = get_enriched_observation_array_single_agent(self.game_state, self.ACTION_SPACE_LENGTH, self.LOCATION_MASK_LENGTH)
