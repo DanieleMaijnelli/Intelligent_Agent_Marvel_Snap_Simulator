@@ -11,10 +11,11 @@ class MarvelSnapSingleAgentEnv(gym.Env):
         self.card_pool_list = Decks.ALL_CARDS
         self.number_of_cards = len(self.card_pool_list)
         self.ACTION_SPACE_LENGTH = 3 * self.number_of_cards + 1
+        self.LOCATION_MASK_LENGTH = len(Decks.ALL_LOCATIONS) * 3
         self.observation_space = spaces.Box(
             low=-100.0,
             high=100.0,
-            shape=(9 + self.ACTION_SPACE_LENGTH,),
+            shape=(9 + self.ACTION_SPACE_LENGTH + self.LOCATION_MASK_LENGTH, ),
             dtype=numpy.float32
         )
         self.action_space = spaces.Discrete(self.ACTION_SPACE_LENGTH)
@@ -22,7 +23,7 @@ class MarvelSnapSingleAgentEnv(gym.Env):
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         self.game_state.reset()
-        observation_array = get_observation_array_single_agent(self.game_state, self.ACTION_SPACE_LENGTH)
+        observation_array = get_enriched_observation_array_single_agent(self.game_state, self.ACTION_SPACE_LENGTH, self.LOCATION_MASK_LENGTH)
         info_dictionary = {}
         return observation_array, info_dictionary
 
@@ -65,6 +66,6 @@ class MarvelSnapSingleAgentEnv(gym.Env):
                     reward -= 5.0
                 terminated_flag = True
 
-        observation_array = get_observation_array_single_agent(self.game_state, self.ACTION_SPACE_LENGTH)
+        observation_array = get_enriched_observation_array_single_agent(self.game_state, self.ACTION_SPACE_LENGTH, self.LOCATION_MASK_LENGTH)
         info_dictionary = {}
         return observation_array, reward, terminated_flag, truncated_flag, info_dictionary

@@ -1,6 +1,7 @@
 import cards
 import inspect
 import random
+import Locations
 
 ALL_CARDS = [
     cls for name, cls in inspect.getmembers(cards, inspect.isclass)
@@ -8,6 +9,13 @@ ALL_CARDS = [
 ]
 
 CLASS_TO_INDEX = {cls: idx for idx, cls in enumerate(ALL_CARDS)}
+
+ALL_LOCATIONS = [
+    cls for name, cls in inspect.getmembers(Locations, inspect.isclass)
+    if cls.__module__.startswith("Locations") and cls is not Locations.Location
+]
+
+LOCATION_CLASS_TO_INDEX = {cls: idx for idx, cls in enumerate(ALL_LOCATIONS)}
 
 
 def form_random_deck():

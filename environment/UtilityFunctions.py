@@ -4,23 +4,33 @@ import Decks
 
 
 def get_observation_array_single_agent(game_state, action_mask_length):
-    status_dictionary = game_state.status
-    location_dictionary = game_state.locationList
-    feature_list = []
-    for location_key in ["location1", "location2", "location3"]:
-        location = location_dictionary[location_key]
-        feature_list.append(float(location.alliesPower) / 10.0)
-        feature_list.append(float(location.enemiesPower) / 10.0)
-    feature_list.append(float(status_dictionary["allyenergy"]) / 10.0)
-    feature_list.append(float(status_dictionary["turncounter"]) / 7.0)
-    feature_list.append(1.0 if status_dictionary["allypriority"] else 0.0)
-
+    feature_list = build_basic_observation(game_state)
     features = numpy.array(feature_list, dtype=numpy.float32)
     action_mask = build_player_action_mask(game_state, True, action_mask_length).astype(numpy.float32)
     return numpy.concatenate([features, action_mask], axis=0)
 
 
+def get_enriched_observation_array_single_agent(game_state, action_mask_length, locations_mask_length):
+    feature_list = build_basic_observation(game_state)
+    features = numpy.array(feature_list, dtype=numpy.float32)
+    action_mask = build_player_action_mask(game_state, True, action_mask_length).astype(numpy.float32)
+    locations_mask = build_locations_mask(game_state, locations_mask_length).astype(numpy.float32)
+    return numpy.concatenate([features, action_mask, locations_mask], axis=0)
+
+
 def get_observation_array_snap_agent(game_state, number_of_cards):
+    status_dictionary = game_state.status
+    feature_list = build_basic_observation(game_state)
+    feature_list.append(float(status_dictionary["cubes"]) / 8.0)
+    feature_list.append(float(status_dictionary["tempcubes"]) / 8.0)
+    feature_list.append(1.0 if status_dictionary["allysnapped"] else 0.0)
+
+    features = numpy.array(feature_list, dtype=numpy.float32)
+    owned_cards_mask = build_owned_cards_vector(game_state, True, number_of_cards).astype(numpy.float32)
+    return numpy.concatenate([features, owned_cards_mask], axis=0)
+
+
+def build_basic_observation(game_state):
     status_dictionary = game_state.status
     location_dictionary = game_state.locationList
     feature_list = []
@@ -28,18 +38,10 @@ def get_observation_array_snap_agent(game_state, number_of_cards):
         location = location_dictionary[location_key]
         feature_list.append(float(location.alliesPower) / 10.0)
         feature_list.append(float(location.enemiesPower) / 10.0)
-        feature_list.append(float(len(location.allies)) / 4.0)
-        feature_list.append(float(len(location.enemies)) / 4.0)
     feature_list.append(float(status_dictionary["allyenergy"]) / 10.0)
     feature_list.append(float(status_dictionary["turncounter"]) / 7.0)
     feature_list.append(1.0 if status_dictionary["allypriority"] else 0.0)
-    feature_list.append(float(status_dictionary["cubes"]) / 8.0)
-    feature_list.append(float(status_dictionary["tempcubes"]) / 8.0)
-    feature_list.append(1.0 if status_dictionary["allysnapped"] else 0.0)
-
-    features = numpy.array(feature_list, dtype=numpy.float32)
-    action_mask = build_owned_cards_vector(game_state, True, number_of_cards).astype(numpy.float32)
-    return numpy.concatenate([features, action_mask], axis=0)
+    return feature_list
 
 
 def build_player_action_mask(game_state, is_ally, action_mask_length):
@@ -56,6 +58,19 @@ def build_player_action_mask(game_state, is_ally, action_mask_length):
                 action_mask[action_index] = 1
     action_mask[action_mask_length - 1] = 1
     return action_mask
+
+
+def build_locations_mask(game_state, locations_mask_length):
+    locations_mask = numpy.zeros(locations_mask_length, dtype=numpy.int8)
+    location_dictionary = game_state.locationList
+    for location_number, location_key in enumerate(["location1", "location2", "location3"]):
+        location = location_dictionary[location_key]
+        location_class = location.__class__
+        location_index = Decks.LOCATION_CLASS_TO_INDEX.get(location_class)
+        if location_index is not None:
+            locations_mask[location_index * 3 + location_number] = 1
+
+    return locations_mask
 
 
 def build_owned_cards_vector(game_state, is_ally, number_of_cards):
