@@ -125,7 +125,7 @@ def build_played_cards_observation(game_state, is_ally):
             while slot_index < 4:
                 if slot_index < len(card_list):
                     card_object = card_list[slot_index]
-                    card_index_value = float(Decks.CLASS_TO_INDEX[card_object.__class__])
+                    card_index_value = float(Decks.CLASS_TO_INDEX.get(card_object.__class__, 0))
                     current_power_value = float(card_object.cur_power)
                     current_cost_value = float(card_object.cur_cost)
                     embedding_vector = get_card_embedding(card_object)

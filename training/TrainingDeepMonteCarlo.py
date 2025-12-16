@@ -40,6 +40,12 @@ def load_q_network(file_path, input_dimension, hidden_dimension=512):
     return q_network
 
 
+def choose_random_action(environment, is_ally):
+    game_state = environment.game_state
+    legal_actions_list = get_legal_actions(game_state, is_ally)
+    return random.choice(legal_actions_list)
+
+
 def choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon):
     game_state = environment.game_state
     legal_actions_list = get_legal_actions(game_state, is_ally)
@@ -102,16 +108,26 @@ def generate_episode(environment, q_network, epsilon):
     return episode_ally_state_actions, episode_enemy_state_actions, final_reward_ally, final_reward_enemy
 
 
-def train_deep_monte_carlo(
+def train_deep_monte_carlo_with_logging(
     number_of_episodes,
     learning_rate=1e-4,
     epsilon_start=0.9,
     epsilon_end=0.05,
+    seed_value=None,
+    evaluation_interval=100,
+    evaluation_games=50,
+    log_csv_path=None,
+    save_model_path=None,
 ):
+    if seed_value is not None:
+        set_global_seed(seed_value)
+
     dummy_environment = SingleAgentTestEnvironment()
     dummy_environment.reset()
     dummy_action = (-1, -1)
-    dummy_state_action_vector = build_observation_with_chosen_action(dummy_environment.game_state, True, dummy_action)
+    dummy_state_action_vector = build_observation_with_chosen_action(
+        dummy_environment.game_state, True, dummy_action
+    )
     input_dimension = len(dummy_state_action_vector)
 
     q_network = QNetwork(input_dimension)
@@ -120,11 +136,36 @@ def train_deep_monte_carlo(
 
     environment = SingleAgentTestEnvironment()
 
+    training_loss_history = []
+    ally_win_rate_history = []
+    enemy_win_rate_history = []
+    tie_rate_history = []
+
+    csv_file = None
+    csv_writer = None
+    if log_csv_path is not None:
+        import csv
+        csv_file = open(log_csv_path, "w", newline="")
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(
+            [
+                "episode",
+                "epsilon",
+                "loss",
+                "final_reward_ally",
+                "final_reward_enemy",
+                "ally_win_rate",
+                "enemy_win_rate",
+                "tie_rate",
+            ]
+        )
+
     episode_index = 0
     while episode_index < number_of_episodes:
         if number_of_episodes > 1:
             epsilon = epsilon_end + (epsilon_start - epsilon_end) * (
-                1.0 - float(episode_index) / float(number_of_episodes - 1))
+                1.0 - float(episode_index) / float(number_of_episodes - 1)
+            )
         else:
             epsilon = epsilon_start
 
@@ -146,8 +187,12 @@ def train_deep_monte_carlo(
                 training_state_action_list.append(state_action_vector)
                 target_return_list.append(final_reward)
 
+        loss_value_float = 0.0
+
         if len(training_state_action_list) > 0:
-            state_action_array = numpy.stack(training_state_action_list).astype(numpy.float32)
+            state_action_array = numpy.stack(training_state_action_list).astype(
+                numpy.float32
+            )
             target_array = numpy.array(target_return_list, dtype=numpy.float32)
 
             state_action_tensor = torch.from_numpy(state_action_array)
@@ -160,10 +205,152 @@ def train_deep_monte_carlo(
             loss_value.backward()
             optimizer.step()
 
+            loss_value_float = float(loss_value.item())
+            training_loss_history.append(loss_value_float)
+
+        ally_win_rate = ""
+        enemy_win_rate = ""
+        tie_rate = ""
+
+        if evaluation_interval is not None and evaluation_interval > 0:
+            if (episode_index + 1) % evaluation_interval == 0:
+                eval_results = evaluate_against_random_opponent(
+                    q_network, evaluation_games, epsilon_agent=0.0
+                )
+                ally_win_rate = eval_results["ally_win_rate"]
+                enemy_win_rate = eval_results["enemy_win_rate"]
+                tie_rate = eval_results["tie_rate"]
+
+                ally_win_rate_history.append(ally_win_rate)
+                enemy_win_rate_history.append(enemy_win_rate)
+                tie_rate_history.append(tie_rate)
+
+                print(
+                    "Episode:",
+                    episode_index + 1,
+                    "Loss:",
+                    loss_value_float,
+                    "Epsilon:",
+                    epsilon,
+                    "Ally win rate vs random:",
+                    ally_win_rate,
+                    "Enemy win rate:",
+                    enemy_win_rate,
+                    "Tie rate:",
+                    tie_rate,
+                )
+
+        if csv_writer is not None:
+            csv_writer.writerow(
+                [
+                    episode_index + 1,
+                    epsilon,
+                    loss_value_float,
+                    final_reward_ally,
+                    final_reward_enemy,
+                    ally_win_rate,
+                    enemy_win_rate,
+                    tie_rate,
+                ]
+            )
+
         episode_index += 1
 
-    return q_network
+    if csv_file is not None:
+        csv_file.close()
+
+    if save_model_path is not None:
+        save_q_network(q_network, save_model_path)
+
+    results_dictionary = {
+        "q_network": q_network,
+        "training_loss_history": training_loss_history,
+        "ally_win_rate_history": ally_win_rate_history,
+        "enemy_win_rate_history": enemy_win_rate_history,
+        "tie_rate_history": tie_rate_history,
+    }
+    return results_dictionary
+
+
+def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0.0):
+    environment = SingleAgentTestEnvironment(True)
+
+    ally_wins = 0
+    enemy_wins = 0
+    ties = 0
+
+    game_index = 0
+    while game_index < number_of_games:
+        environment.reset()
+        done = False
+        is_ally = True
+
+        while not done:
+            if is_ally:
+                action, _ = choose_action_epsilon_greedy(
+                    environment, q_network, True, epsilon_agent
+                )
+            else:
+                action = choose_random_action(environment, False)
+
+            action_type, done = environment.step(action, is_ally)
+
+            if action_type == "Passed":
+                is_ally = not is_ally
+
+        winner = environment.game_state.passStatus["winner"]
+        if winner == "Ally":
+            ally_wins += 1
+        elif winner == "Enemy":
+            enemy_wins += 1
+        else:
+            ties += 1
+
+        game_index += 1
+
+    total_games = float(number_of_games)
+    ally_win_rate = ally_wins / total_games
+    enemy_win_rate = enemy_wins / total_games
+    tie_rate = ties / total_games
+
+    results_dictionary = {
+        "ally_wins": ally_wins,
+        "enemy_wins": enemy_wins,
+        "ties": ties,
+        "ally_win_rate": ally_win_rate,
+        "enemy_win_rate": enemy_win_rate,
+        "tie_rate": tie_rate,
+    }
+    return results_dictionary
 
 
 if __name__ == "__main__":
-    trained_q_network = train_deep_monte_carlo(number_of_episodes=10000)
+    results = train_deep_monte_carlo_with_logging(
+        number_of_episodes=40000,
+        learning_rate=1e-4,
+        epsilon_start=0.9,
+        epsilon_end=0.05,
+        seed_value=42,
+        evaluation_interval=1000,
+        evaluation_games=100,
+        log_csv_path="training_log.csv",
+        save_model_path="trained_q_network.pt",
+    )
+
+    trained_q_network = results["q_network"]
+    print("Training finished.")
+
+    input_dimension = trained_q_network.linear_layer_1.in_features
+
+    loaded_q_network = load_q_network(
+        "trained_q_network.pt",
+        input_dimension=input_dimension,
+        hidden_dimension=512,
+    )
+
+    final_eval_results = evaluate_against_random_opponent(
+        loaded_q_network,
+        number_of_games=2000,
+        epsilon_agent=0.0,
+    )
+    print("Final evaluation vs random opponent:", final_eval_results)
