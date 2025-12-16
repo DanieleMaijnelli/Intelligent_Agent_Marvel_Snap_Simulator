@@ -102,7 +102,7 @@ def evaluate_model(model, n_episodes=100):
 
 if __name__ == "__main__":
     model = train_dqn(total_timesteps=5_000_000)
-    evaluate_model(model, n_episodes=10000)
+    evaluate_model(model, n_episodes=5000)
 
 # Se il modello esiste già usa questa versione
 '''if __name__ == "__main__":
