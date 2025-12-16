@@ -8,7 +8,7 @@ class AltarOfDeath(Location):
     
     def onPlayEffect(self, card):
         if card.location == self:
-            print("Destroying ", card.name, " to get +2 Energy next turn.")
+            #print("Destroying ", card.name, " to get +2 Energy next turn.")
             if card.ally:
                 self.status["tempenergyally"] += 2
             else:

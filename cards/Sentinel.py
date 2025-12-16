@@ -12,4 +12,4 @@ class Sentinel(Card):
         else:
             self.status["enemyhand"].append(Sentinel(self.ally, self.status))
 
-        print("Added another Sentinel card to your hand")
+        #print("Added another Sentinel card to your hand")

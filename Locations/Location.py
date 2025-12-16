@@ -76,13 +76,9 @@ class Location:
                 self.preRevealAllies.append(unit)
                 return True
             else:
-                print("Can't play that card here")
+                #print("Can't play that card here")
                 return False
         else:
-            if (self.can_play_cards_allies == False):
-                print("Can't play cards")
-            else:
-                print("location full")
             return False
 
     def addToEnemies(self, unit):
@@ -91,13 +87,9 @@ class Location:
                 self.preRevealEnemies.append(unit)
                 return True
             else:
-                print("Can't play that card here")
+                #print("Can't play that card here")
                 return False
         else:
-            if self.can_play_cards_enemies == False:
-                print("Can't play cards")
-            else:
-                print("location full")
             return False
 
     def checkIfLocationFull(self, ally: bool):

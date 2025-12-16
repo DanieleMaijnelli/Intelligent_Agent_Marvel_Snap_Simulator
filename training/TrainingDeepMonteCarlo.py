@@ -51,23 +51,27 @@ def choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon):
     legal_actions_list = get_legal_actions(game_state, is_ally)
     if random.random() < epsilon:
         chosen_action = random.choice(legal_actions_list)
-        state_action_vector = build_observation_with_chosen_action(game_state, is_ally, chosen_action)
+        state_action_vector = build_observation_with_chosen_action(
+            game_state, is_ally, chosen_action
+        )
         return chosen_action, numpy.array(state_action_vector, dtype=numpy.float32)
 
-    best_q_value = None
-    best_action = None
-    best_state_action_vector = None
-
+    state_action_vector_list = []
     for action_tuple in legal_actions_list:
-        state_action_vector = build_observation_with_chosen_action(game_state, is_ally, action_tuple)
-        state_action_tensor = torch.from_numpy(numpy.array(state_action_vector, dtype=numpy.float32)).unsqueeze(0)
-        with torch.no_grad():
-            q_value_tensor = q_network(state_action_tensor)
-        q_value = float(q_value_tensor.item())
-        if best_q_value is None or q_value > best_q_value:
-            best_q_value = q_value
-            best_action = action_tuple
-            best_state_action_vector = state_action_vector
+        state_action_vector = build_observation_with_chosen_action(
+            game_state, is_ally, action_tuple
+        )
+        state_action_vector_list.append(state_action_vector)
+
+    state_action_array = numpy.stack(state_action_vector_list).astype(numpy.float32)
+    state_action_tensor = torch.from_numpy(state_action_array)
+
+    with torch.no_grad():
+        q_value_tensor = q_network(state_action_tensor)
+
+    best_action_index = int(torch.argmax(q_value_tensor).item())
+    best_action = legal_actions_list[best_action_index]
+    best_state_action_vector = state_action_vector_list[best_action_index]
 
     return best_action, numpy.array(best_state_action_vector, dtype=numpy.float32)
 
@@ -272,8 +276,8 @@ def train_deep_monte_carlo_with_logging(
     return results_dictionary
 
 
-def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0.0):
-    environment = SingleAgentTestEnvironment(True)
+def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0.0, verbose=False):
+    environment = SingleAgentTestEnvironment(verbose)
 
     ally_wins = 0
     enemy_wins = 0
@@ -325,16 +329,17 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
 
 
 if __name__ == "__main__":
+    number_of_episodes = 150000
     results = train_deep_monte_carlo_with_logging(
-        number_of_episodes=40000,
+        number_of_episodes=number_of_episodes,
         learning_rate=1e-4,
         epsilon_start=0.9,
         epsilon_end=0.05,
         seed_value=42,
         evaluation_interval=1000,
-        evaluation_games=100,
-        log_csv_path="training_log.csv",
-        save_model_path="trained_q_network.pt",
+        evaluation_games=300,
+        log_csv_path=f"training_log_{number_of_episodes}_episodes.csv",
+        save_model_path=f"trained_q_network_{number_of_episodes}_episodes.pt",
     )
 
     trained_q_network = results["q_network"]
@@ -350,7 +355,8 @@ if __name__ == "__main__":
 
     final_eval_results = evaluate_against_random_opponent(
         loaded_q_network,
-        number_of_games=2000,
+        number_of_games=5000,
         epsilon_agent=0.0,
+        verbose=True
     )
     print("Final evaluation vs random opponent:", final_eval_results)
