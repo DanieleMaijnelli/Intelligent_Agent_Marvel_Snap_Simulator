@@ -76,7 +76,7 @@ def choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon):
     return best_action, numpy.array(best_state_action_vector, dtype=numpy.float32)
 
 
-def generate_episode(environment, q_network, epsilon):
+def generate_episode(environment, q_network, epsilon, enemy_type):
     environment.reset()
     episode_ally_state_actions = []
     episode_enemy_state_actions = []
@@ -86,17 +86,25 @@ def generate_episode(environment, q_network, epsilon):
     is_ally = True
 
     while not done:
-        action, state_action_vector = choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon)
-        action_type, done = environment.step(action, is_ally)
-
         if is_ally:
+            action, state_action_vector = choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon)
+            action_type, done = environment.step(action, is_ally)
             episode_ally_state_actions.append(state_action_vector)
             if action_type == "Passed":
                 is_ally = False
         else:
-            episode_enemy_state_actions.append(state_action_vector)
-            if action_type == "Passed":
-                is_ally = True
+            if enemy_type == "Self-Play":
+                action, state_action_vector = choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon)
+                action_type, done = environment.step(action, is_ally)
+                episode_enemy_state_actions.append(state_action_vector)
+                if action_type == "Passed":
+                    is_ally = True
+            else:
+                action = choose_random_action(environment, False)
+                action_type, done = environment.step(action, is_ally)
+                if action_type == "Passed":
+                    is_ally = True
+
         if done:
             winner = environment.game_state.passStatus["winner"]
             if winner == "Ally":
@@ -173,12 +181,19 @@ def train_deep_monte_carlo_with_logging(
         else:
             epsilon = epsilon_start
 
+        block_size = 100
+        block_index = int(episode_index / block_size)
+
+        if block_index % 2 == 0:
+            enemy_type = "Self-Play"
+        else:
+            enemy_type = "Random"
         (
             episode_ally_state_actions,
             episode_enemy_state_actions,
             final_reward_ally,
             final_reward_enemy,
-        ) = generate_episode(environment, q_network, epsilon)
+        ) = generate_episode(environment, q_network, epsilon, enemy_type)
 
         training_state_action_list = []
         target_return_list = []
@@ -329,7 +344,7 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
 
 
 if __name__ == "__main__":
-    number_of_episodes = 150000
+    number_of_episodes = 20000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=1e-4,
