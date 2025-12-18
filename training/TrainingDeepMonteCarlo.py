@@ -370,6 +370,6 @@ if __name__ == "__main__":
         loaded_q_network,
         number_of_games=10000,
         epsilon_agent=0.0,
-        verbose=True
+        verbose=False
     )
     print("Final evaluation vs random opponent:", final_eval_results)
