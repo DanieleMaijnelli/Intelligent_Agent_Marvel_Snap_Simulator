@@ -15,6 +15,8 @@ class GameState:
             "start_time": "",
             "end_time": "",
         }
+        self.ally_deck_number = None
+        self.enemy_deck_number = None
         self.verbose = verbose
         self.version = '1.1.0'
         self.game_id = ''
@@ -177,8 +179,10 @@ class GameState:
                 i += 1
 
     def gameStart(self):
-        player_deck_classes = Decks.form_random_basic_deck()
-        enemy_deck_classes = Decks.form_random_basic_deck()
+        ally_deck_classes, ally_deck_number = Decks.form_random_basic_deck()
+        enemy_deck_classes, enemy_deck_number = Decks.form_random_basic_deck()
+        self.ally_deck_number = ally_deck_number
+        self.enemy_deck_number = enemy_deck_number
         self.game_id = str(generate(size=10))
         self.game = {
             "game_id": self.game_id,
@@ -186,7 +190,7 @@ class GameState:
             "start_time": datetime.utcfromtimestamp(time.time()).isoformat() + "Z",
             "end_time": '',
         }
-        self.status["allydeck"] = [cls(True, self.status) for cls in player_deck_classes]
+        self.status["allydeck"] = [cls(True, self.status) for cls in ally_deck_classes]
         self.status["enemydeck"] = [cls(False, self.status) for cls in enemy_deck_classes]
         random.shuffle(self.status["allydeck"])
         random.shuffle(self.status["enemydeck"])

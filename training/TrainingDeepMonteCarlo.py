@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 from environment.SingleAgentTestEnvironment import SingleAgentTestEnvironment
 from environment.TestUtilityFunctions import *
+import time
 
 
 def set_global_seed(seed_value):
@@ -134,6 +135,7 @@ def train_deep_monte_carlo_with_logging(
     if seed_value is not None:
         set_global_seed(seed_value)
 
+    start_time_seconds = time.time()
     dummy_environment = SingleAgentTestEnvironment()
     dummy_environment.reset()
     dummy_action = (-1, -1)
@@ -159,18 +161,29 @@ def train_deep_monte_carlo_with_logging(
         import csv
         csv_file = open(log_csv_path, "w", newline="")
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(
-            [
-                "episode",
-                "epsilon",
-                "loss",
-                "final_reward_ally",
-                "final_reward_enemy",
-                "ally_win_rate",
-                "enemy_win_rate",
-                "tie_rate",
-            ]
-        )
+        header_row = [
+            "episode",
+            "elapsed_hours",
+            "epsilon",
+            "loss",
+            "final_reward_ally",
+            "final_reward_enemy",
+            "ally_win_rate",
+            "enemy_win_rate",
+            "tie_rate",
+        ]
+
+        ally_deck_number = 1
+        while ally_deck_number <= 4:
+            enemy_deck_number = 1
+            while enemy_deck_number <= 4:
+                header_row.append(
+                    "ally_win_rate_deck_" + str(ally_deck_number) + "_vs_" + str(enemy_deck_number)
+                )
+                enemy_deck_number += 1
+            ally_deck_number += 1
+
+        csv_writer.writerow(header_row)
 
     episode_index = 0
     while episode_index < number_of_episodes:
@@ -230,15 +243,31 @@ def train_deep_monte_carlo_with_logging(
         ally_win_rate = ""
         enemy_win_rate = ""
         tie_rate = ""
+        elapsed_hours = ""
+        deck_pair_ally_win_rate_value_list = []
+        deck_pair_value_index = 0
+        while deck_pair_value_index < 16:
+            deck_pair_ally_win_rate_value_list.append("")
+            deck_pair_value_index += 1
 
         if evaluation_interval is not None and evaluation_interval > 0:
             if (episode_index + 1) % evaluation_interval == 0:
                 eval_results = evaluate_against_random_opponent(
                     q_network, evaluation_games, epsilon_agent=0.0
                 )
+                elapsed_hours = (time.time() - start_time_seconds) / 3600.0
                 ally_win_rate = eval_results["ally_win_rate"]
                 enemy_win_rate = eval_results["enemy_win_rate"]
                 tie_rate = eval_results["tie_rate"]
+                deck_pair_ally_win_rate_value_list = []
+                ally_deck_number = 1
+                while ally_deck_number <= 4:
+                    enemy_deck_number = 1
+                    while enemy_deck_number <= 4:
+                        key_name = "ally_win_rate_deck_" + str(ally_deck_number) + "_vs_" + str(enemy_deck_number)
+                        deck_pair_ally_win_rate_value_list.append(eval_results[key_name])
+                        enemy_deck_number += 1
+                    ally_deck_number += 1
 
                 ally_win_rate_history.append(ally_win_rate)
                 enemy_win_rate_history.append(enemy_win_rate)
@@ -263,6 +292,7 @@ def train_deep_monte_carlo_with_logging(
             csv_writer.writerow(
                 [
                     episode_index + 1,
+                    elapsed_hours,
                     epsilon,
                     loss_value_float,
                     final_reward_ally,
@@ -271,6 +301,7 @@ def train_deep_monte_carlo_with_logging(
                     enemy_win_rate,
                     tie_rate,
                 ]
+                + deck_pair_ally_win_rate_value_list
             )
 
         episode_index += 1
@@ -298,6 +329,15 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
     enemy_wins = 0
     ties = 0
 
+    deck_pair_total_game_count_matrix = []
+    deck_pair_ally_win_count_matrix = []
+
+    deck_index_row = 0
+    while deck_index_row < 4:
+        deck_pair_total_game_count_matrix.append([0, 0, 0, 0])
+        deck_pair_ally_win_count_matrix.append([0, 0, 0, 0])
+        deck_index_row += 1
+
     game_index = 0
     while game_index < number_of_games:
         environment.reset()
@@ -317,9 +357,18 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
             if action_type == "Passed":
                 is_ally = not is_ally
 
+        ally_deck_number = int(environment.game_state.ally_deck_number)
+        enemy_deck_number = int(environment.game_state.enemy_deck_number)
+
+        ally_deck_index = ally_deck_number - 1
+        enemy_deck_index = enemy_deck_number - 1
+
+        deck_pair_total_game_count_matrix[ally_deck_index][enemy_deck_index] += 1
+
         winner = environment.game_state.passStatus["winner"]
         if winner == "Ally":
             ally_wins += 1
+            deck_pair_ally_win_count_matrix[ally_deck_index][enemy_deck_index] += 1
         elif winner == "Enemy":
             enemy_wins += 1
         else:
@@ -340,6 +389,28 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
         "enemy_win_rate": enemy_win_rate,
         "tie_rate": tie_rate,
     }
+
+    ally_deck_number = 1
+    while ally_deck_number <= 4:
+        enemy_deck_number = 1
+        while enemy_deck_number <= 4:
+            ally_deck_index = ally_deck_number - 1
+            enemy_deck_index = enemy_deck_number - 1
+
+            total_count = int(deck_pair_total_game_count_matrix[ally_deck_index][enemy_deck_index])
+            ally_win_count = int(deck_pair_ally_win_count_matrix[ally_deck_index][enemy_deck_index])
+
+            if total_count > 0:
+                deck_pair_ally_win_rate = float(ally_win_count) / float(total_count)
+            else:
+                deck_pair_ally_win_rate = 0.0
+
+            key_name = "ally_win_rate_deck_" + str(ally_deck_number) + "_vs_" + str(enemy_deck_number)
+            results_dictionary[key_name] = deck_pair_ally_win_rate
+
+            enemy_deck_number += 1
+        ally_deck_number += 1
+
     return results_dictionary
 
 
@@ -347,12 +418,12 @@ if __name__ == "__main__":
     number_of_episodes = 20000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
-        learning_rate=1e-4,
+        learning_rate=3e-4,
         epsilon_start=0.9,
         epsilon_end=0.05,
         seed_value=42,
         evaluation_interval=1000,
-        evaluation_games=300,
+        evaluation_games=500,
         log_csv_path=f"training_log_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_{number_of_episodes}_episodes.pt",
     )
@@ -370,7 +441,7 @@ if __name__ == "__main__":
 
     final_eval_results = evaluate_against_random_opponent(
         loaded_q_network,
-        number_of_games=5000,
+        number_of_games=30000,
         epsilon_agent=0.0,
         verbose=True
     )
