@@ -5,6 +5,8 @@ import torch.optim as optim
 from environment.SingleAgentTestEnvironment import SingleAgentTestEnvironment
 from environment.TestUtilityFunctions import *
 import time
+from TrainingUtilityFunctions import *
+from TrainingNetwork import QNetwork, load_q_network, save_q_network
 
 
 def set_global_seed(seed_value):
@@ -13,32 +15,6 @@ def set_global_seed(seed_value):
     torch.manual_seed(seed_value)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed_value)
-
-
-class QNetwork(nn.Module):
-    def __init__(self, input_dimension, hidden_dimension=512):
-        super(QNetwork, self).__init__()
-        self.linear_layer_1 = nn.Linear(input_dimension, hidden_dimension)
-        self.linear_layer_2 = nn.Linear(hidden_dimension, hidden_dimension)
-        self.linear_layer_3 = nn.Linear(hidden_dimension, 1)
-
-    def forward(self, state_action_tensor):
-        x = torch.relu(self.linear_layer_1(state_action_tensor))
-        x = torch.relu(self.linear_layer_2(x))
-        x = self.linear_layer_3(x)
-        return x.squeeze(-1)
-
-
-def save_q_network(q_network, file_path):
-    torch.save(q_network.state_dict(), file_path)
-
-
-def load_q_network(file_path, input_dimension, hidden_dimension=512):
-    q_network = QNetwork(input_dimension, hidden_dimension)
-    state_dictionary = torch.load(file_path, map_location=torch.device("cpu"))
-    q_network.load_state_dict(state_dictionary)
-    q_network.eval()
-    return q_network
 
 
 def choose_random_action(environment, is_ally):
@@ -158,32 +134,7 @@ def train_deep_monte_carlo_with_logging(
     csv_file = None
     csv_writer = None
     if log_csv_path is not None:
-        import csv
-        csv_file = open(log_csv_path, "w", newline="")
-        csv_writer = csv.writer(csv_file)
-        header_row = [
-            "episode",
-            "elapsed_hours",
-            "epsilon",
-            "loss",
-            "final_reward_ally",
-            "final_reward_enemy",
-            "ally_win_rate",
-            "enemy_win_rate",
-            "tie_rate",
-        ]
-
-        ally_deck_number = 1
-        while ally_deck_number <= 4:
-            enemy_deck_number = 1
-            while enemy_deck_number <= 4:
-                header_row.append(
-                    "ally_win_rate_deck_" + str(ally_deck_number) + "_vs_" + str(enemy_deck_number)
-                )
-                enemy_deck_number += 1
-            ally_deck_number += 1
-
-        csv_writer.writerow(header_row)
+        csv_file, csv_writer = create_training_csv_writer(log_csv_path)
 
     episode_index = 0
     while episode_index < number_of_episodes:
@@ -243,7 +194,7 @@ def train_deep_monte_carlo_with_logging(
         ally_win_rate = ""
         enemy_win_rate = ""
         tie_rate = ""
-        elapsed_hours = ""
+        elapsed_minutes = ""
         deck_pair_ally_win_rate_value_list = []
         deck_pair_value_index = 0
         while deck_pair_value_index < 16:
@@ -255,53 +206,29 @@ def train_deep_monte_carlo_with_logging(
                 eval_results = evaluate_against_random_opponent(
                     q_network, evaluation_games, epsilon_agent=0.0
                 )
-                elapsed_hours = (time.time() - start_time_seconds) / 3600.0
+                elapsed_minutes = (time.time() - start_time_seconds) / 60.0
                 ally_win_rate = eval_results["ally_win_rate"]
                 enemy_win_rate = eval_results["enemy_win_rate"]
                 tie_rate = eval_results["tie_rate"]
-                deck_pair_ally_win_rate_value_list = []
-                ally_deck_number = 1
-                while ally_deck_number <= 4:
-                    enemy_deck_number = 1
-                    while enemy_deck_number <= 4:
-                        key_name = "ally_win_rate_deck_" + str(ally_deck_number) + "_vs_" + str(enemy_deck_number)
-                        deck_pair_ally_win_rate_value_list.append(eval_results[key_name])
-                        enemy_deck_number += 1
-                    ally_deck_number += 1
+                deck_pair_ally_win_rate_value_list = extract_deck_pair_ally_win_rate_list(eval_results)
 
                 ally_win_rate_history.append(ally_win_rate)
                 enemy_win_rate_history.append(enemy_win_rate)
                 tie_rate_history.append(tie_rate)
 
-                print(
-                    "Episode:",
-                    episode_index + 1,
-                    "Loss:",
-                    loss_value_float,
-                    "Epsilon:",
-                    epsilon,
-                    "Ally win rate vs random:",
-                    ally_win_rate,
-                    "Enemy win rate:",
-                    enemy_win_rate,
-                    "Tie rate:",
-                    tie_rate,
-                )
-
         if csv_writer is not None:
-            csv_writer.writerow(
-                [
-                    episode_index + 1,
-                    elapsed_hours,
-                    epsilon,
-                    loss_value_float,
-                    final_reward_ally,
-                    final_reward_enemy,
-                    ally_win_rate,
-                    enemy_win_rate,
-                    tie_rate,
-                ]
-                + deck_pair_ally_win_rate_value_list
+            write_training_csv_row(
+                csv_writer,
+                episode_index + 1,
+                elapsed_minutes,
+                epsilon,
+                loss_value_float,
+                final_reward_ally,
+                final_reward_enemy,
+                ally_win_rate,
+                enemy_win_rate,
+                tie_rate,
+                deck_pair_ally_win_rate_value_list,
             )
 
         episode_index += 1
@@ -415,7 +342,7 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
 
 
 if __name__ == "__main__":
-    number_of_episodes = 20000
+    number_of_episodes = 30000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
@@ -423,7 +350,7 @@ if __name__ == "__main__":
         epsilon_end=0.05,
         seed_value=42,
         evaluation_interval=1000,
-        evaluation_games=500,
+        evaluation_games=1000,
         log_csv_path=f"training_log_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_{number_of_episodes}_episodes.pt",
     )
@@ -441,7 +368,7 @@ if __name__ == "__main__":
 
     final_eval_results = evaluate_against_random_opponent(
         loaded_q_network,
-        number_of_games=30000,
+        number_of_games=10000,
         epsilon_agent=0.0,
         verbose=True
     )
