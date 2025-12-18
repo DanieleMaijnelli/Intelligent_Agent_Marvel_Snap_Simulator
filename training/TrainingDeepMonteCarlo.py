@@ -5,8 +5,8 @@ import torch.optim as optim
 from environment.SingleAgentTestEnvironment import SingleAgentTestEnvironment
 from environment.TestUtilityFunctions import *
 import time
-from TrainingUtilityFunctions import *
-from TrainingNetwork import QNetwork, load_q_network, save_q_network
+from training.TrainingUtilityFunctions import *
+from training.TrainingNetwork import QNetwork, load_q_network, save_q_network
 
 
 def set_global_seed(seed_value):
@@ -368,7 +368,7 @@ if __name__ == "__main__":
 
     final_eval_results = evaluate_against_random_opponent(
         loaded_q_network,
-        number_of_games=10000,
+        number_of_games=7500,
         epsilon_agent=0.0,
         verbose=False
     )
