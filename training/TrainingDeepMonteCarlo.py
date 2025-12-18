@@ -368,7 +368,7 @@ if __name__ == "__main__":
 
     final_eval_results = evaluate_against_random_opponent(
         loaded_q_network,
-        number_of_games=7500,
+        number_of_games=8000,
         epsilon_agent=0.0,
         verbose=False
     )
