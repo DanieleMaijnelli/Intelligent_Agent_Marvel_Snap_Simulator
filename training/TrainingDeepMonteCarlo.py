@@ -342,7 +342,7 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
 
 
 if __name__ == "__main__":
-    number_of_episodes = 30000
+    number_of_episodes = 200000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
@@ -368,7 +368,7 @@ if __name__ == "__main__":
 
     final_eval_results = evaluate_against_random_opponent(
         loaded_q_network,
-        number_of_games=8000,
+        number_of_games=15000,
         epsilon_agent=0.0,
         verbose=False
     )
