@@ -342,13 +342,13 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
 
 
 if __name__ == "__main__":
-    number_of_episodes = 200000
+    number_of_episodes = 25000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
         epsilon_start=0.9,
         epsilon_end=0.05,
-        seed_value=42,
+        seed_value=43,
         evaluation_interval=1000,
         evaluation_games=1000,
         log_csv_path=f"training_log_{number_of_episodes}_episodes.csv",
@@ -368,8 +368,10 @@ if __name__ == "__main__":
 
     final_eval_results = evaluate_against_random_opponent(
         loaded_q_network,
-        number_of_games=15000,
+        number_of_games=10000,
         epsilon_agent=0.0,
         verbose=False
     )
-    print("Final evaluation vs random opponent:", final_eval_results)
+    print("Final evaluation vs random opponent:")
+    for key, value in final_eval_results.items():
+        print(f"{key}: {format_csv_value(value)}")
