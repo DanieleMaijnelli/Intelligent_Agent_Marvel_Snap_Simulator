@@ -2,7 +2,6 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from environment.SingleAgentTestEnvironment import SingleAgentTestEnvironment
 from environment.TestUtilityFunctions import *
 import time
 from training.TrainingUtilityFunctions import *
@@ -110,16 +109,9 @@ def train_deep_monte_carlo_with_logging(
 ):
     if seed_value is not None:
         set_global_seed(seed_value)
-
     start_time_seconds = time.time()
-    dummy_environment = SingleAgentTestEnvironment()
-    dummy_environment.reset()
-    dummy_action = (-1, -1)
-    dummy_state_action_vector = build_observation_with_chosen_action(
-        dummy_environment.game_state, True, dummy_action
-    )
-    input_dimension = len(dummy_state_action_vector)
 
+    input_dimension = get_input_dimension()
     q_network = QNetwork(input_dimension)
     optimizer = optim.Adam(q_network.parameters(), lr=learning_rate)
     loss_function = nn.MSELoss()
@@ -317,38 +309,20 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
         "tie_rate": tie_rate,
     }
 
-    ally_deck_number = 1
-    while ally_deck_number <= 4:
-        enemy_deck_number = 1
-        while enemy_deck_number <= 4:
-            ally_deck_index = ally_deck_number - 1
-            enemy_deck_index = enemy_deck_number - 1
-
-            total_count = int(deck_pair_total_game_count_matrix[ally_deck_index][enemy_deck_index])
-            ally_win_count = int(deck_pair_ally_win_count_matrix[ally_deck_index][enemy_deck_index])
-
-            if total_count > 0:
-                deck_pair_ally_win_rate = float(ally_win_count) / float(total_count)
-            else:
-                deck_pair_ally_win_rate = 0.0
-
-            key_name = "ally_win_rate_deck_" + str(ally_deck_number) + "_vs_" + str(enemy_deck_number)
-            results_dictionary[key_name] = deck_pair_ally_win_rate
-
-            enemy_deck_number += 1
-        ally_deck_number += 1
+    compute_individual_decks_win_rate(deck_pair_ally_win_count_matrix, deck_pair_total_game_count_matrix,
+                                      results_dictionary)
 
     return results_dictionary
 
 
 if __name__ == "__main__":
-    number_of_episodes = 25000
+    number_of_episodes = 40000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
         epsilon_start=0.9,
         epsilon_end=0.05,
-        seed_value=43,
+        seed_value=44,
         evaluation_interval=1000,
         evaluation_games=1000,
         log_csv_path=f"training_log_{number_of_episodes}_episodes.csv",
