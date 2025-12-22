@@ -118,11 +118,11 @@ def generate_episode(environment, q_network, epsilon, enemy_type):
         if done:
             winner = environment.game_state.passStatus["winner"]
             if winner == "Ally":
-                final_reward_ally = 25.0
-                final_reward_enemy = -25.0
+                final_reward_ally = 2.5
+                final_reward_enemy = -2.5
             elif winner == "Enemy":
-                final_reward_ally = -25.0
-                final_reward_enemy = 25.0
+                final_reward_ally = -2.5
+                final_reward_enemy = 2.5
             else:
                 final_reward_ally = 0.0
                 final_reward_enemy = 0.0

@@ -9,7 +9,7 @@ def create_training_csv_writer(log_csv_path):
 
     header_row = [
         "episode",
-        "elapsed_hours",
+        "elapsed_minutes",
         "epsilon",
         "loss",
         "final_reward_ally",
@@ -49,7 +49,7 @@ def extract_deck_pair_ally_win_rate_list(eval_results):
 def write_training_csv_row(
     csv_writer,
     episode_number,
-    elapsed_hours,
+    elapsed_minutes,
     epsilon,
     loss_value_float,
     final_reward_ally,
@@ -64,7 +64,7 @@ def write_training_csv_row(
 
     row_value_list = [
                          episode_number,
-                         elapsed_hours,
+                         elapsed_minutes,
                          epsilon,
                          loss_value_float,
                          final_reward_ally,
@@ -138,9 +138,9 @@ def compute_end_of_turn_location_reward(game_state):
 
     for location_object in [location_1, location_2, location_3]:
         if location_object.winning == "Ally":
-            reward_value += 1.0
+            reward_value += 0.1
         elif location_object.winning == "Enemy":
-            reward_value -= 1.0
+            reward_value -= 0.1
 
     return reward_value
 
