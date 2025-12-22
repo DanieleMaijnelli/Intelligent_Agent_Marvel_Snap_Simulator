@@ -8,8 +8,8 @@ from training.TrainingUtilityFunctions import get_input_dimension
 from training.TrainingDeepMonteCarlo import evaluate_against_random_opponent
 
 if __name__ == "__main__":
-    #, 25000, 30000, 40000, 150000, 200000
-    episodes_list = [20000]
+    #, 25000, 30000, 40000, 150000
+    episodes_list = [200000]
 
     number_of_games = 10000
     epsilon_agent = 0.0

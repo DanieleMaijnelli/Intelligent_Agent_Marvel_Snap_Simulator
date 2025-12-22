@@ -9,5 +9,5 @@ class Newyork(Location):
     def startOfTurn(self):
         super().startOfTurn()
         if self.status["turncounter"] == 5:
-            print("You can move cards here!!")
+            #print("You can move cards here!!")
             self.location_can_be_moved_to = True
