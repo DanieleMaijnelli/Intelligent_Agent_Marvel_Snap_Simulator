@@ -8,7 +8,6 @@ class Knull(Card):
     
     def ongoing(self,card):
         for unit in self.status["alliesdestroyed"] + self.status["enemiesdestroyed"]:
-            print("Adding ", unit.cur_power," to Knull")
             self.ongoing_buff += unit.cur_power
     
     def applyOngoing(self, locationlist):

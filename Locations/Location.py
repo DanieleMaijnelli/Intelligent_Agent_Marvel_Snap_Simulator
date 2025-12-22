@@ -309,8 +309,6 @@ class Location:
                 "enemydeck"]:
                 if card.activate_on_destroy:
                     card.activateOnDestroy(card, temp)
-        else:
-            print(card.name, " can't be destroyed!")
 
     def onCardBeingMoved(self, card):
         pass
