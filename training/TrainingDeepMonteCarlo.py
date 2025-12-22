@@ -56,23 +56,43 @@ def generate_episode(environment, q_network, epsilon, enemy_type):
     environment.reset()
     episode_ally_state_actions = []
     episode_enemy_state_actions = []
+
+    ally_reward_list = []
+    enemy_reward_list = []
+
     final_reward_ally = 0.0
     final_reward_enemy = 0.0
+
     done = False
     is_ally = True
 
+    last_ally_action_index_in_turn = None
+    last_enemy_action_index_in_turn = None
+
+    previous_turn_counter = int(environment.game_state.status["turncounter"])
+
     while not done:
         if is_ally:
-            action, state_action_vector = choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon)
+            action, state_action_vector = choose_action_epsilon_greedy(
+                environment, q_network, is_ally, epsilon
+            )
             action_type, done = environment.step(action, is_ally)
             episode_ally_state_actions.append(state_action_vector)
+            ally_reward_list.append(0.0)
+            last_ally_action_index_in_turn = len(ally_reward_list) - 1
+
             if action_type == "Passed":
                 is_ally = False
         else:
             if enemy_type == "Self-Play":
-                action, state_action_vector = choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon)
+                action, state_action_vector = choose_action_epsilon_greedy(
+                    environment, q_network, is_ally, epsilon
+                )
                 action_type, done = environment.step(action, is_ally)
                 episode_enemy_state_actions.append(state_action_vector)
+                enemy_reward_list.append(0.0)
+                last_enemy_action_index_in_turn = len(enemy_reward_list) - 1
+
                 if action_type == "Passed":
                     is_ally = True
             else:
@@ -81,19 +101,48 @@ def generate_episode(environment, q_network, epsilon, enemy_type):
                 if action_type == "Passed":
                     is_ally = True
 
+        current_turn_counter = int(environment.game_state.status["turncounter"])
+        if current_turn_counter != previous_turn_counter:
+            end_of_turn_reward = compute_end_of_turn_location_reward(environment.game_state)
+
+            if last_ally_action_index_in_turn is not None:
+                ally_reward_list[last_ally_action_index_in_turn] += end_of_turn_reward
+
+            if last_enemy_action_index_in_turn is not None:
+                enemy_reward_list[last_enemy_action_index_in_turn] -= end_of_turn_reward
+
+            last_ally_action_index_in_turn = None
+            last_enemy_action_index_in_turn = None
+            previous_turn_counter = current_turn_counter
+
         if done:
             winner = environment.game_state.passStatus["winner"]
             if winner == "Ally":
-                final_reward_ally = 1.0
-                final_reward_enemy = -1.0
+                final_reward_ally = 25.0
+                final_reward_enemy = -25.0
             elif winner == "Enemy":
-                final_reward_ally = -1.0
-                final_reward_enemy = 1.0
+                final_reward_ally = -25.0
+                final_reward_enemy = 25.0
             else:
                 final_reward_ally = 0.0
                 final_reward_enemy = 0.0
 
-    return episode_ally_state_actions, episode_enemy_state_actions, final_reward_ally, final_reward_enemy
+            if len(ally_reward_list) > 0:
+                ally_reward_list[len(ally_reward_list) - 1] += final_reward_ally
+            if len(enemy_reward_list) > 0:
+                enemy_reward_list[len(enemy_reward_list) - 1] += final_reward_enemy
+
+    ally_return_list = compute_monte_carlo_returns(ally_reward_list, discount_factor=1.0)
+    enemy_return_list = compute_monte_carlo_returns(enemy_reward_list, discount_factor=1.0)
+
+    return (
+        episode_ally_state_actions,
+        episode_enemy_state_actions,
+        ally_return_list,
+        enemy_return_list,
+        final_reward_ally,
+        final_reward_enemy,
+    )
 
 
 def train_deep_monte_carlo_with_logging(
@@ -147,6 +196,8 @@ def train_deep_monte_carlo_with_logging(
         (
             episode_ally_state_actions,
             episode_enemy_state_actions,
+            ally_return_list,
+            enemy_return_list,
             final_reward_ally,
             final_reward_enemy,
         ) = generate_episode(environment, q_network, epsilon, enemy_type)
@@ -154,13 +205,13 @@ def train_deep_monte_carlo_with_logging(
         training_state_action_list = []
         target_return_list = []
 
-        for episode_actions, final_reward in [
-            (episode_ally_state_actions, final_reward_ally),
-            (episode_enemy_state_actions, final_reward_enemy),
-        ]:
-            for state_action_vector in episode_actions:
-                training_state_action_list.append(state_action_vector)
-                target_return_list.append(final_reward)
+        for state_action_vector, target_return in zip(episode_ally_state_actions, ally_return_list):
+            training_state_action_list.append(state_action_vector)
+            target_return_list.append(target_return)
+
+        for state_action_vector, target_return in zip(episode_enemy_state_actions, enemy_return_list):
+            training_state_action_list.append(state_action_vector)
+            target_return_list.append(target_return)
 
         loss_value_float = 0.0
 
@@ -316,7 +367,7 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
 
 
 if __name__ == "__main__":
-    number_of_episodes = 40000
+    number_of_episodes = 29000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,

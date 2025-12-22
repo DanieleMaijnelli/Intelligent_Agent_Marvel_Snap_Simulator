@@ -127,3 +127,32 @@ def compute_individual_decks_win_rate(deck_pair_ally_win_count_matrix, deck_pair
 
             enemy_deck_number += 1
         ally_deck_number += 1
+
+
+def compute_end_of_turn_location_reward(game_state):
+    reward_value = 0.0
+
+    location_1 = game_state.locationList["location1"]
+    location_2 = game_state.locationList["location2"]
+    location_3 = game_state.locationList["location3"]
+
+    for location_object in [location_1, location_2, location_3]:
+        if location_object.winning == "Ally":
+            reward_value += 1.0
+        elif location_object.winning == "Enemy":
+            reward_value -= 1.0
+
+    return reward_value
+
+
+def compute_monte_carlo_returns(reward_list, discount_factor=1.0):
+    returns_list = [0.0] * len(reward_list)
+
+    running_return = 0.0
+    index_value = len(reward_list) - 1
+    while index_value >= 0:
+        running_return = reward_list[index_value] + discount_factor * running_return
+        returns_list[index_value] = running_return
+        index_value -= 1
+
+    return returns_list
