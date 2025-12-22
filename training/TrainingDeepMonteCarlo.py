@@ -227,6 +227,9 @@ def train_deep_monte_carlo_with_logging(
             predicted_q_tensor = q_network(state_action_tensor)
             loss_value = loss_function(predicted_q_tensor, target_tensor)
 
+            print("Trova l'errore")
+            print(predicted_q_tensor.shape, target_tensor.shape)
+
             optimizer.zero_grad()
             loss_value.backward()
             optimizer.step()
@@ -386,7 +389,7 @@ if __name__ == "__main__":
     input_dimension = trained_q_network.linear_layer_1.in_features
 
     loaded_q_network = load_q_network(
-        "trained_q_network.pt",
+        f"trained_q_network_{number_of_episodes}_episodes.pt",
         input_dimension=input_dimension,
         hidden_dimension=512,
     )
