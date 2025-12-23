@@ -103,7 +103,7 @@ def generate_episode(environment, q_network, epsilon, enemy_type):
 
         current_turn_counter = int(environment.game_state.status["turncounter"])
         if current_turn_counter != previous_turn_counter:
-            end_of_turn_reward = 0.2 * float(previous_turn_counter) * compute_end_of_turn_location_reward(environment.game_state)
+            end_of_turn_reward = 0.5 * float(previous_turn_counter) * compute_end_of_turn_location_reward(environment.game_state)
 
             if last_ally_action_index_in_turn is not None:
                 ally_reward_list[last_ally_action_index_in_turn] += end_of_turn_reward
@@ -367,13 +367,13 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
 
 
 if __name__ == "__main__":
-    number_of_episodes = 199999
+    number_of_episodes = 50000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
         epsilon_start=0.9,
         epsilon_end=0.05,
-        seed_value=44,
+        seed_value=54,
         evaluation_interval=1000,
         evaluation_games=1000,
         log_csv_path=f"training_log_{number_of_episodes}_episodes.csv",
