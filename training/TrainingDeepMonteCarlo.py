@@ -118,11 +118,11 @@ def generate_episode(environment, q_network, epsilon, enemy_type):
         if done:
             winner = environment.game_state.passStatus["winner"]
             if winner == "Ally":
-                final_reward_ally = 1.5
-                final_reward_enemy = -1.5
+                final_reward_ally = 1.0
+                final_reward_enemy = -1.0
             elif winner == "Enemy":
-                final_reward_ally = -1.5
-                final_reward_enemy = 1.5
+                final_reward_ally = -1.0
+                final_reward_enemy = 1.0
             else:
                 final_reward_ally = 0.0
                 final_reward_enemy = 0.0
@@ -367,7 +367,7 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
 
 
 if __name__ == "__main__":
-    number_of_episodes = 210000
+    number_of_episodes = 700000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
