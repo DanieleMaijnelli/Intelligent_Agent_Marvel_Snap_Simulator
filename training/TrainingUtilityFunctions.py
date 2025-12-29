@@ -1,6 +1,9 @@
 import csv
 from environment.SingleAgentTestEnvironment import SingleAgentTestEnvironment
-from environment.TestUtilityFunctions import build_observation_with_chosen_action
+from environment.TestUtilityFunctions import build_observation_with_chosen_action, get_legal_actions
+import random
+import torch
+import numpy
 
 
 def create_training_csv_writer(log_csv_path):
@@ -156,3 +159,113 @@ def compute_monte_carlo_returns(reward_list, discount_factor=1.0):
         index_value -= 1
 
     return returns_list
+
+
+def choose_random_action(environment, is_ally):
+    game_state = environment.game_state
+    legal_actions_list = get_legal_actions(game_state, is_ally)
+    return random.choice(legal_actions_list)
+
+
+def choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon):
+    game_state = environment.game_state
+    legal_actions_list = get_legal_actions(game_state, is_ally)
+    if random.random() < epsilon:
+        chosen_action = random.choice(legal_actions_list)
+        state_action_vector = build_observation_with_chosen_action(
+            game_state, is_ally, chosen_action
+        )
+        return chosen_action, numpy.array(state_action_vector, dtype=numpy.float32)
+
+    state_action_vector_list = []
+    for action_tuple in legal_actions_list:
+        state_action_vector = build_observation_with_chosen_action(
+            game_state, is_ally, action_tuple
+        )
+        state_action_vector_list.append(state_action_vector)
+
+    state_action_array = numpy.stack(state_action_vector_list).astype(numpy.float32)
+    state_action_tensor = torch.from_numpy(state_action_array)
+
+    with torch.no_grad():
+        q_value_tensor = q_network(state_action_tensor)
+
+    best_action_index = int(torch.argmax(q_value_tensor).item())
+    best_action = legal_actions_list[best_action_index]
+    best_state_action_vector = state_action_vector_list[best_action_index]
+
+    return best_action, numpy.array(best_state_action_vector, dtype=numpy.float32)
+
+
+def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0.0, verbose=False):
+    environment = SingleAgentTestEnvironment(verbose)
+
+    ally_wins = 0
+    enemy_wins = 0
+    ties = 0
+
+    deck_pair_total_game_count_matrix = []
+    deck_pair_ally_win_count_matrix = []
+
+    deck_index_row = 0
+    while deck_index_row < 4:
+        deck_pair_total_game_count_matrix.append([0, 0, 0, 0])
+        deck_pair_ally_win_count_matrix.append([0, 0, 0, 0])
+        deck_index_row += 1
+
+    game_index = 0
+    while game_index < number_of_games:
+        environment.reset()
+        done = False
+        is_ally = True
+
+        while not done:
+            if is_ally:
+                action, _ = choose_action_epsilon_greedy(
+                    environment, q_network, True, epsilon_agent
+                )
+            else:
+                action = choose_random_action(environment, False)
+
+            action_type, done = environment.step(action, is_ally)
+
+            if action_type == "Passed":
+                is_ally = not is_ally
+
+        ally_deck_number = int(environment.game_state.ally_deck_number)
+        enemy_deck_number = int(environment.game_state.enemy_deck_number)
+
+        ally_deck_index = ally_deck_number - 1
+        enemy_deck_index = enemy_deck_number - 1
+
+        deck_pair_total_game_count_matrix[ally_deck_index][enemy_deck_index] += 1
+
+        winner = environment.game_state.passStatus["winner"]
+        if winner == "Ally":
+            ally_wins += 1
+            deck_pair_ally_win_count_matrix[ally_deck_index][enemy_deck_index] += 1
+        elif winner == "Enemy":
+            enemy_wins += 1
+        else:
+            ties += 1
+
+        game_index += 1
+
+    total_games = float(number_of_games)
+    ally_win_rate = ally_wins / total_games
+    enemy_win_rate = enemy_wins / total_games
+    tie_rate = ties / total_games
+
+    results_dictionary = {
+        "ally_wins": ally_wins,
+        "enemy_wins": enemy_wins,
+        "ties": ties,
+        "ally_win_rate": ally_win_rate,
+        "enemy_win_rate": enemy_win_rate,
+        "tie_rate": tie_rate,
+    }
+
+    compute_individual_decks_win_rate(deck_pair_ally_win_count_matrix, deck_pair_total_game_count_matrix,
+                                      results_dictionary)
+
+    return results_dictionary
