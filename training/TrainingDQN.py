@@ -1,12 +1,8 @@
-import random
-import torch
+import time
 import torch.nn as nn
 import torch.optim as optim
-from environment.TestUtilityFunctions import *
-import time
 from training.TrainingUtilityFunctions import *
 from training.TrainingNetwork import QNetwork, load_q_network, save_q_network
-from training.TrainingDeepMonteCarlo import choose_action_epsilon_greedy, choose_random_action, evaluate_against_random_opponent
 
 
 def set_global_seed(seed_value):
@@ -31,124 +27,270 @@ class ReplayBuffer:
             self.transition_list.append(transition_tuple)
         else:
             self.transition_list[self.write_index] = transition_tuple
-        self.write_index = (self.write_index + 1) % self.maximum_size
+            self.write_index += 1
+            if self.write_index >= self.maximum_size:
+                self.write_index = 0
 
     def sample_batch(self, batch_size):
         batch_size = int(batch_size)
         return random.sample(self.transition_list, batch_size)
 
 
-def compute_terminal_rewards(game_state):
-    winner = game_state.passStatus["winner"]
-    if winner == "Ally":
-        return 1.0, -1.0
-    if winner == "Enemy":
-        return -1.0, 1.0
-    return 0.0, 0.0
-
-
-def compute_max_next_q_value(q_network_target, game_state, is_ally):
+def _build_next_state_action_array(game_state, is_ally):
     legal_actions_list = get_legal_actions(game_state, is_ally)
-    if len(legal_actions_list) == 0:
-        return 0.0
 
     state_action_vector_list = []
     for action_tuple in legal_actions_list:
-        state_action_vector = build_observation_with_chosen_action(
-            game_state, is_ally, action_tuple
-        )
-        state_action_vector_list.append(state_action_vector)
+        v = build_observation_with_chosen_action(game_state, is_ally, action_tuple)
+        state_action_vector_list.append(v)
 
-    state_action_array = numpy.stack(state_action_vector_list).astype(numpy.float32)
-    state_action_tensor = torch.from_numpy(state_action_array)
+    if len(state_action_vector_list) <= 0:
+        return None
 
-    with torch.no_grad():
-        q_value_tensor = q_network_target(state_action_tensor)
-
-    return float(torch.max(q_value_tensor).item())
+    return numpy.stack(state_action_vector_list).astype(numpy.float32)
 
 
-def choose_enemy_action(environment, q_network, enemy_type, epsilon):
-    if enemy_type == "Self-Play":
-        action, _ = choose_action_epsilon_greedy(environment, q_network, False, epsilon)
-        return action
-    return choose_random_action(environment, False)
+def generate_episode_transitions(environment, q_network, epsilon, enemy_type):
+    environment.reset()
 
+    transition_dict_list = []
 
-def step_from_ally_perspective(environment, q_network, epsilon, enemy_type, use_end_of_turn_reward):
-    game_state_before = copy.deepcopy(environment.game_state)
-    action, state_action_vector = choose_action_epsilon_greedy(environment, q_network, True, epsilon)
+    final_reward_ally = 0.0
+    final_reward_enemy = 0.0
+
+    done = False
+    is_ally = True
+
+    pending_transition_ally = None
+    pending_transition_enemy = None
+
+    last_ally_transition_in_turn = None
+    last_enemy_transition_in_turn = None
 
     previous_turn_counter = int(environment.game_state.status["turncounter"])
-    reward_value = 0.0
 
-    action_type, done = environment.step(action, True)
-    is_ally = True
-    if action_type == "Passed":
-        is_ally = False
+    while not done:
+        if is_ally:
+            if pending_transition_ally is not None:
+                pending_transition_ally["next_state_action_array"] = _build_next_state_action_array(
+                    environment.game_state, True
+                )
+                pending_transition_ally["done"] = False
+                pending_transition_ally = None
 
-    current_turn_counter = int(environment.game_state.status["turncounter"])
-    if use_end_of_turn_reward and current_turn_counter != previous_turn_counter:
-        reward_value += compute_end_of_turn_location_reward(environment.game_state)
-        previous_turn_counter = current_turn_counter
+            action, state_action_vector = choose_action_epsilon_greedy(
+                environment, q_network, True, epsilon
+            )
 
-    while not done and not is_ally:
-        enemy_action = choose_enemy_action(environment, q_network, enemy_type, epsilon)
-        action_type, done = environment.step(enemy_action, False)
-        if action_type == "Passed":
-            is_ally = True
+            new_transition = {
+                "state_action_vector": numpy.array(state_action_vector, dtype=numpy.float32),
+                "reward": 0.0,
+                "next_state_action_array": None,
+                "done": False,
+                "player_is_ally": True,
+            }
+            transition_dict_list.append(new_transition)
+            pending_transition_ally = new_transition
+            last_ally_transition_in_turn = new_transition
+
+            action_type, done = environment.step(action, True)
+
+            if action_type == "Passed":
+                is_ally = False
+
+        else:
+            if enemy_type == "Self-Play":
+                if pending_transition_enemy is not None:
+                    pending_transition_enemy["next_state_action_array"] = _build_next_state_action_array(
+                        environment.game_state, False
+                    )
+                    pending_transition_enemy["done"] = False
+                    pending_transition_enemy = None
+
+                action, state_action_vector = choose_action_epsilon_greedy(
+                    environment, q_network, False, epsilon
+                )
+
+                new_transition = {
+                    "state_action_vector": numpy.array(state_action_vector, dtype=numpy.float32),
+                    "reward": 0.0,
+                    "next_state_action_array": None,
+                    "done": False,
+                    "player_is_ally": False,
+                }
+                transition_dict_list.append(new_transition)
+                pending_transition_enemy = new_transition
+                last_enemy_transition_in_turn = new_transition
+
+                action_type, done = environment.step(action, False)
+
+                if action_type == "Passed":
+                    is_ally = True
+            else:
+                action = choose_random_action(environment, False)
+                action_type, done = environment.step(action, False)
+                if action_type == "Passed":
+                    is_ally = True
 
         current_turn_counter = int(environment.game_state.status["turncounter"])
-        if use_end_of_turn_reward and current_turn_counter != previous_turn_counter:
-            reward_value += compute_end_of_turn_location_reward(environment.game_state)
+        if current_turn_counter != previous_turn_counter:
+            end_of_turn_reward = float(previous_turn_counter) * compute_end_of_turn_location_reward(
+                environment.game_state
+            )
+
+            if last_ally_transition_in_turn is not None:
+                last_ally_transition_in_turn["reward"] += end_of_turn_reward
+
+            if last_enemy_transition_in_turn is not None:
+                last_enemy_transition_in_turn["reward"] -= end_of_turn_reward
+
+            last_ally_transition_in_turn = None
+            last_enemy_transition_in_turn = None
             previous_turn_counter = current_turn_counter
 
-    if done:
-        final_reward_ally, final_reward_enemy = compute_terminal_rewards(environment.game_state)
-        reward_value += final_reward_ally
+        if done:
+            winner = environment.game_state.passStatus["winner"]
+            if winner == "Ally":
+                final_reward_ally = 2.0
+                final_reward_enemy = -2.0
+            elif winner == "Enemy":
+                final_reward_ally = -2.0
+                final_reward_enemy = 2.0
+            else:
+                final_reward_ally = 0.0
+                final_reward_enemy = 0.0
 
-    next_game_state = copy.deepcopy(environment.game_state)
-    return (
-        numpy.array(state_action_vector, dtype=numpy.float32),
-        float(reward_value),
-        next_game_state,
-        bool(done),
-    )
+            if last_ally_transition_in_turn is not None:
+                last_ally_transition_in_turn["reward"] += final_reward_ally
+            else:
+                if pending_transition_ally is not None:
+                    pending_transition_ally["reward"] += final_reward_ally
+
+            if last_enemy_transition_in_turn is not None:
+                last_enemy_transition_in_turn["reward"] += final_reward_enemy
+            else:
+                if pending_transition_enemy is not None:
+                    pending_transition_enemy["reward"] += final_reward_enemy
+
+            if pending_transition_ally is not None:
+                pending_transition_ally["next_state_action_array"] = None
+                pending_transition_ally["done"] = True
+                pending_transition_ally = None
+
+            if pending_transition_enemy is not None:
+                pending_transition_enemy["next_state_action_array"] = None
+                pending_transition_enemy["done"] = True
+                pending_transition_enemy = None
+
+    transition_tuple_list = []
+    for t in transition_dict_list:
+        transition_tuple_list.append(
+            (
+                t["state_action_vector"],
+                float(t["reward"]),
+                t["next_state_action_array"],
+                bool(t["done"]),
+            )
+        )
+
+    return transition_tuple_list, final_reward_ally, final_reward_enemy
 
 
-def train_deep_q_learning_with_logging(
+def _compute_dqn_batch_loss(q_network, target_network, batch_transition_list, discount_factor):
+    if batch_transition_list is None or len(batch_transition_list) <= 0:
+        return None
+
+    state_action_list = []
+    reward_list = []
+    done_list = []
+
+    next_arrays = []
+    next_owner_index = []
+    sample_index = 0
+
+    for (state_action_vector, reward_value, next_state_action_array, done_flag) in batch_transition_list:
+        state_action_list.append(state_action_vector)
+        reward_list.append(float(reward_value))
+        done_list.append(bool(done_flag))
+
+        if (not done_flag) and (next_state_action_array is not None) and (len(next_state_action_array) > 0):
+            next_arrays.append(next_state_action_array)
+            next_owner_index.append(sample_index)
+
+        sample_index += 1
+
+    state_action_array = numpy.stack(state_action_list).astype(numpy.float32)
+    state_action_tensor = torch.from_numpy(state_action_array)
+
+    reward_tensor = torch.from_numpy(numpy.array(reward_list, dtype=numpy.float32))
+    done_mask_tensor = torch.from_numpy(numpy.array(done_list, dtype=numpy.float32))
+
+    predicted_q_tensor = q_network(state_action_tensor).view(-1)
+
+    next_max_q_tensor = torch.zeros((len(batch_transition_list),), dtype=torch.float32)
+
+    if len(next_arrays) > 0:
+        concatenated_next = numpy.concatenate(next_arrays, axis=0).astype(numpy.float32)
+        concatenated_next_tensor = torch.from_numpy(concatenated_next)
+
+        with torch.no_grad():
+            concatenated_q = target_network(concatenated_next_tensor).view(-1)
+
+        start_index = 0
+        block_index = 0
+        while block_index < len(next_arrays):
+            block = next_arrays[block_index]
+            block_len = int(block.shape[0])
+            end_index = start_index + block_len
+
+            owner = int(next_owner_index[block_index])
+            block_max = torch.max(concatenated_q[start_index:end_index])
+            next_max_q_tensor[owner] = block_max
+
+            start_index = end_index
+            block_index += 1
+
+    target_q_tensor = reward_tensor + (1.0 - done_mask_tensor) * float(discount_factor) * next_max_q_tensor
+    loss_function = nn.MSELoss()
+    loss_value = loss_function(predicted_q_tensor, target_q_tensor)
+
+    return loss_value
+
+
+def train_dqn_with_logging(
     number_of_episodes,
     learning_rate=1e-4,
-    discount_factor=0.99,
     epsilon_start=0.9,
     epsilon_end=0.05,
     seed_value=None,
     evaluation_interval=100,
-    evaluation_games=500,
-    replay_buffer_size=200000,
-    batch_size=256,
-    target_update_interval=2000,
-    updates_per_episode=1,
-    enemy_type="Random",
-    use_end_of_turn_reward=True,
+    evaluation_games=50,
     log_csv_path=None,
     save_model_path=None,
+    # DQN-specific
+    replay_buffer_size=200000,
+    batch_size=64,
+    discount_factor=1.0,
+    updates_per_episode=1,
+    target_update_interval=2000,  # in gradient steps
+    gradient_clip_norm=1.0,
 ):
     if seed_value is not None:
         set_global_seed(seed_value)
+
     start_time_seconds = time.time()
 
     input_dimension = get_input_dimension()
     q_network = QNetwork(input_dimension)
-    q_network_target = QNetwork(input_dimension)
-    q_network_target.load_state_dict(q_network.state_dict())
-    q_network_target.eval()
+    target_network = QNetwork(input_dimension)
+    target_network.load_state_dict(q_network.state_dict())
+    target_network.eval()
 
     optimizer = optim.Adam(q_network.parameters(), lr=learning_rate)
-    loss_function = nn.MSELoss()
+
+    environment = SingleAgentTestEnvironment()
 
     replay_buffer = ReplayBuffer(replay_buffer_size)
-    environment = SingleAgentTestEnvironment()
 
     training_loss_history = []
     ally_win_rate_history = []
@@ -161,7 +303,7 @@ def train_deep_q_learning_with_logging(
         csv_file, csv_writer = create_training_csv_writer(log_csv_path)
 
     episode_index = 0
-    update_step_counter = 0
+    gradient_step_counter = 0
 
     while episode_index < number_of_episodes:
         if number_of_episodes > 1:
@@ -171,85 +313,89 @@ def train_deep_q_learning_with_logging(
         else:
             epsilon = epsilon_start
 
-        environment.reset()
-        done = False
+        # stesso schema blocchi: self-play / random alternati
+        block_size = 10
+        block_index = int(episode_index / block_size)
+        if block_index % 2 == 0:
+            enemy_type = "Self-Play"
+        else:
+            enemy_type = "Random"
 
-        while not done:
-            state_action_vector, reward_value, next_game_state, done = step_from_ally_perspective(
-                environment,
-                q_network,
-                epsilon,
-                enemy_type,
-                use_end_of_turn_reward,
-            )
-            replay_buffer.add_transition((state_action_vector, reward_value, next_game_state, done))
+        transition_tuple_list, final_reward_ally, final_reward_enemy = generate_episode_transitions(
+            environment, q_network, epsilon, enemy_type
+        )
 
+        # add to replay buffer
+        for transition_tuple in transition_tuple_list:
+            replay_buffer.add_transition(transition_tuple)
+
+        # training step(s)
         loss_value_float = 0.0
-
-        update_iteration = 0
-        while update_iteration < updates_per_episode:
-            if len(replay_buffer) >= batch_size:
+        if len(replay_buffer) >= int(batch_size):
+            update_index = 0
+            while update_index < int(updates_per_episode):
                 batch_transition_list = replay_buffer.sample_batch(batch_size)
+                loss_value = _compute_dqn_batch_loss(
+                    q_network, target_network, batch_transition_list, discount_factor
+                )
+                if loss_value is not None:
+                    optimizer.zero_grad()
+                    loss_value.backward()
+                    if gradient_clip_norm is not None and gradient_clip_norm > 0:
+                        torch.nn.utils.clip_grad_norm_(q_network.parameters(), float(gradient_clip_norm))
+                    optimizer.step()
 
-                batch_state_action_list = []
-                batch_target_list = []
+                    loss_value_float = float(loss_value.item())
+                    training_loss_history.append(loss_value_float)
 
-                for state_action_vector, reward_value, next_game_state, transition_done in batch_transition_list:
-                    if transition_done:
-                        target_value = float(reward_value)
-                    else:
-                        max_next_q_value = compute_max_next_q_value(q_network_target, next_game_state, True)
-                        target_value = float(reward_value) + float(discount_factor) * float(max_next_q_value)
+                    gradient_step_counter += 1
+                    if target_update_interval is not None and target_update_interval > 0:
+                        if gradient_step_counter % int(target_update_interval) == 0:
+                            target_network.load_state_dict(q_network.state_dict())
+                            target_network.eval()
 
-                    batch_state_action_list.append(state_action_vector)
-                    batch_target_list.append(target_value)
+                update_index += 1
 
-                state_action_array = numpy.stack(batch_state_action_list).astype(numpy.float32)
-                target_array = numpy.array(batch_target_list, dtype=numpy.float32)
-
-                state_action_tensor = torch.from_numpy(state_action_array)
-                target_tensor = torch.from_numpy(target_array)
-
-                predicted_q_tensor = q_network(state_action_tensor)
-                loss_value = loss_function(predicted_q_tensor, target_tensor)
-
-                optimizer.zero_grad()
-                loss_value.backward()
-                optimizer.step()
-
-                loss_value_float = float(loss_value.item())
-                training_loss_history.append(loss_value_float)
-
-                update_step_counter += 1
-                if target_update_interval is not None and target_update_interval > 0:
-                    if update_step_counter % target_update_interval == 0:
-                        q_network_target.load_state_dict(q_network.state_dict())
-                        q_network_target.eval()
-
-            update_iteration += 1
+        # evaluation + csv logging: uguale al tuo file
+        ally_win_rate = ""
+        enemy_win_rate = ""
+        tie_rate = ""
+        elapsed_minutes = ""
+        deck_pair_ally_win_rate_value_list = []
+        deck_pair_value_index = 0
+        while deck_pair_value_index < 16:
+            deck_pair_ally_win_rate_value_list.append("")
+            deck_pair_value_index += 1
 
         if evaluation_interval is not None and evaluation_interval > 0:
             if (episode_index + 1) % evaluation_interval == 0:
                 eval_results = evaluate_against_random_opponent(
                     q_network, evaluation_games, epsilon_agent=0.0
                 )
-                ally_win_rate = eval_results["ally_win_rate"]
-                ally_win_rate_history.append(ally_win_rate)
-
                 elapsed_minutes = (time.time() - start_time_seconds) / 60.0
+                ally_win_rate = eval_results["ally_win_rate"]
+                enemy_win_rate = eval_results["enemy_win_rate"]
+                tie_rate = eval_results["tie_rate"]
+                deck_pair_ally_win_rate_value_list = extract_deck_pair_ally_win_rate_list(eval_results)
 
-                if csv_writer is not None:
-                    csv_writer.writerow(
-                        [
-                            episode_index + 1,
-                            elapsed_minutes,
-                            epsilon,
-                            loss_value_float,
-                            eval_results["ally_win_rate"],
-                            eval_results["enemy_win_rate"],
-                            eval_results["tie_rate"],
-                        ]
-                    )
+                ally_win_rate_history.append(ally_win_rate)
+                enemy_win_rate_history.append(enemy_win_rate)
+                tie_rate_history.append(tie_rate)
+
+        if csv_writer is not None:
+            write_training_csv_row(
+                csv_writer,
+                episode_index + 1,
+                elapsed_minutes,
+                epsilon,
+                loss_value_float,
+                final_reward_ally,
+                final_reward_enemy,
+                ally_win_rate,
+                enemy_win_rate,
+                tie_rate,
+                deck_pair_ally_win_rate_value_list,
+            )
 
         episode_index += 1
 
@@ -263,5 +409,50 @@ def train_deep_q_learning_with_logging(
         "q_network": q_network,
         "training_loss_history": training_loss_history,
         "ally_win_rate_history": ally_win_rate_history,
+        "enemy_win_rate_history": enemy_win_rate_history,
+        "tie_rate_history": tie_rate_history,
     }
     return results_dictionary
+
+
+if __name__ == "__main__":
+    number_of_episodes = 460000
+
+    results = train_dqn_with_logging(
+        number_of_episodes=number_of_episodes,
+        learning_rate=3e-4,
+        epsilon_start=0.9,
+        epsilon_end=0.05,
+        seed_value=54,
+        evaluation_interval=10000,
+        evaluation_games=2000,
+        log_csv_path=f"training_log_dqn_{number_of_episodes}_episodes.csv",
+        save_model_path=f"trained_q_network_dqn_{number_of_episodes}_episodes.pt",
+        replay_buffer_size=200000,
+        batch_size=64,
+        discount_factor=1.0,
+        updates_per_episode=1,
+        target_update_interval=2000,
+        gradient_clip_norm=1.0,
+    )
+
+    trained_q_network = results["q_network"]
+    print("Training finished.")
+
+    input_dimension = trained_q_network.linear_layer_1.in_features
+
+    loaded_q_network = load_q_network(
+        f"trained_q_network_dqn_{number_of_episodes}_episodes.pt",
+        input_dimension=input_dimension,
+        hidden_dimension=512,
+    )
+
+    final_eval_results = evaluate_against_random_opponent(
+        loaded_q_network,
+        number_of_games=10000,
+        epsilon_agent=0.0,
+        verbose=False
+    )
+    print("Final evaluation vs random opponent:")
+    for key, value in final_eval_results.items():
+        print(f"{key}: {format_csv_value(value)}")
