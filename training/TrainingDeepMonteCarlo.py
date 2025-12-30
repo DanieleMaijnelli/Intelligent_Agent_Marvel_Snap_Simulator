@@ -5,14 +5,6 @@ from training.TrainingUtilityFunctions import *
 from training.TrainingNetwork import QNetwork, load_q_network, save_q_network
 
 
-def set_global_seed(seed_value):
-    random.seed(seed_value)
-    numpy.random.seed(seed_value)
-    torch.manual_seed(seed_value)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed_value)
-
-
 def generate_episode(environment, q_network, epsilon, enemy_type):
     environment.reset()
     episode_ally_state_actions = []
@@ -264,8 +256,8 @@ if __name__ == "__main__":
         seed_value=54,
         evaluation_interval=10000,
         evaluation_games=2000,
-        log_csv_path=f"training_log_{number_of_episodes}_episodes.csv",
-        save_model_path=f"trained_q_network_{number_of_episodes}_episodes.pt",
+        log_csv_path=f"training_log_DMC_{number_of_episodes}_episodes.csv",
+        save_model_path=f"trained_q_network_DMC_{number_of_episodes}_episodes.pt",
     )
 
     trained_q_network = results["q_network"]
@@ -274,7 +266,7 @@ if __name__ == "__main__":
     input_dimension = trained_q_network.linear_layer_1.in_features
 
     loaded_q_network = load_q_network(
-        f"trained_q_network_{number_of_episodes}_episodes.pt",
+        f"trained_q_network_DMC_{number_of_episodes}_episodes.pt",
         input_dimension=input_dimension,
         hidden_dimension=512,
     )

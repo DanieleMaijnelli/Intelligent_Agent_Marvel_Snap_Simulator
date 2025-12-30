@@ -5,14 +5,6 @@ from training.TrainingUtilityFunctions import *
 from training.TrainingNetwork import QNetwork, load_q_network, save_q_network
 
 
-def set_global_seed(seed_value):
-    random.seed(seed_value)
-    numpy.random.seed(seed_value)
-    torch.manual_seed(seed_value)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed_value)
-
-
 class ReplayBuffer:
     def __init__(self, maximum_size):
         self.maximum_size = int(maximum_size)
@@ -267,12 +259,11 @@ def train_dqn_with_logging(
     evaluation_games=50,
     log_csv_path=None,
     save_model_path=None,
-    # DQN-specific
     replay_buffer_size=200000,
     batch_size=64,
     discount_factor=1.0,
     updates_per_episode=1,
-    target_update_interval=2000,  # in gradient steps
+    target_update_interval=2000,
     gradient_clip_norm=1.0,
 ):
     if seed_value is not None:
@@ -313,7 +304,6 @@ def train_dqn_with_logging(
         else:
             epsilon = epsilon_start
 
-        # stesso schema blocchi: self-play / random alternati
         block_size = 10
         block_index = int(episode_index / block_size)
         if block_index % 2 == 0:
@@ -325,11 +315,9 @@ def train_dqn_with_logging(
             environment, q_network, epsilon, enemy_type
         )
 
-        # add to replay buffer
         for transition_tuple in transition_tuple_list:
             replay_buffer.add_transition(transition_tuple)
 
-        # training step(s)
         loss_value_float = 0.0
         if len(replay_buffer) >= int(batch_size):
             update_index = 0
@@ -356,7 +344,6 @@ def train_dqn_with_logging(
 
                 update_index += 1
 
-        # evaluation + csv logging: uguale al tuo file
         ally_win_rate = ""
         enemy_win_rate = ""
         tie_rate = ""
@@ -416,7 +403,7 @@ def train_dqn_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 460000
+    number_of_episodes = 470000
 
     results = train_dqn_with_logging(
         number_of_episodes=number_of_episodes,
@@ -426,13 +413,13 @@ if __name__ == "__main__":
         seed_value=54,
         evaluation_interval=10000,
         evaluation_games=2000,
-        log_csv_path=f"training_log_dqn_{number_of_episodes}_episodes.csv",
-        save_model_path=f"trained_q_network_dqn_{number_of_episodes}_episodes.pt",
+        log_csv_path=f"training_log_DQN_{number_of_episodes}_episodes.csv",
+        save_model_path=f"trained_q_network_DQN_{number_of_episodes}_episodes.pt",
         replay_buffer_size=200000,
         batch_size=64,
         discount_factor=1.0,
         updates_per_episode=1,
-        target_update_interval=2000,
+        target_update_interval=3000,
         gradient_clip_norm=1.0,
     )
 
@@ -442,7 +429,7 @@ if __name__ == "__main__":
     input_dimension = trained_q_network.linear_layer_1.in_features
 
     loaded_q_network = load_q_network(
-        f"trained_q_network_dqn_{number_of_episodes}_episodes.pt",
+        f"trained_q_network_DQN_{number_of_episodes}_episodes.pt",
         input_dimension=input_dimension,
         hidden_dimension=512,
     )

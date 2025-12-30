@@ -6,6 +6,14 @@ import torch
 import numpy
 
 
+def set_global_seed(seed_value):
+    random.seed(seed_value)
+    numpy.random.seed(seed_value)
+    torch.manual_seed(seed_value)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed_value)
+
+
 def create_training_csv_writer(log_csv_path):
     csv_file = open(log_csv_path, "w", newline="")
     csv_writer = csv.writer(csv_file)
