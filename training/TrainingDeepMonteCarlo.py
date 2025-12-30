@@ -253,7 +253,7 @@ if __name__ == "__main__":
         learning_rate=3e-4,
         epsilon_start=0.9,
         epsilon_end=0.05,
-        seed_value=54,
+        seed_value=59,
         evaluation_interval=10000,
         evaluation_games=2000,
         log_csv_path=f"training_log_DMC_{number_of_episodes}_episodes.csv",

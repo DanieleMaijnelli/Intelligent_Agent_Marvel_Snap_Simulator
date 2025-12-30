@@ -403,23 +403,23 @@ def train_dqn_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 470000
+    number_of_episodes = 200000
 
     results = train_dqn_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
         epsilon_start=0.9,
         epsilon_end=0.05,
-        seed_value=54,
+        seed_value=59,
         evaluation_interval=10000,
         evaluation_games=2000,
         log_csv_path=f"training_log_DQN_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_DQN_{number_of_episodes}_episodes.pt",
-        replay_buffer_size=10000,
-        batch_size=64,
+        replay_buffer_size=5000,
+        batch_size=32,
         discount_factor=1.0,
         updates_per_episode=1,
-        target_update_interval=2500,
+        target_update_interval=2000,
         gradient_clip_norm=1.0,
     )
 
