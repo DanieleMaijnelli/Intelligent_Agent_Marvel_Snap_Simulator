@@ -415,11 +415,11 @@ if __name__ == "__main__":
         evaluation_games=2000,
         log_csv_path=f"training_log_DQN_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_DQN_{number_of_episodes}_episodes.pt",
-        replay_buffer_size=200000,
+        replay_buffer_size=10000,
         batch_size=64,
         discount_factor=1.0,
         updates_per_episode=1,
-        target_update_interval=3000,
+        target_update_interval=2500,
         gradient_clip_norm=1.0,
     )
 
