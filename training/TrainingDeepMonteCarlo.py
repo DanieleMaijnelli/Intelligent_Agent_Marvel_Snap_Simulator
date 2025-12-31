@@ -247,7 +247,7 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 510000
+    number_of_episodes = 450000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
