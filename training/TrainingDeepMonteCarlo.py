@@ -56,7 +56,7 @@ def generate_episode(environment, q_network, epsilon, enemy_type):
 
         current_turn_counter = int(environment.game_state.status["turncounter"])
         if current_turn_counter != previous_turn_counter:
-            end_of_turn_reward = 0.25 * float(previous_turn_counter) * compute_end_of_turn_location_reward(
+            end_of_turn_reward = float(previous_turn_counter) * compute_end_of_turn_location_reward(
                 environment.game_state)
 
             if last_ally_action_index_in_turn is not None:
@@ -107,6 +107,7 @@ def train_deep_monte_carlo_with_logging(
     seed_value=None,
     evaluation_interval=100,
     evaluation_games=50,
+    decay_fraction=0.5,
     log_csv_path=None,
     save_model_path=None,
 ):
@@ -132,13 +133,14 @@ def train_deep_monte_carlo_with_logging(
         csv_file, csv_writer = create_training_csv_writer(log_csv_path)
 
     episode_index = 0
+    decay_episodes = int(number_of_episodes * decay_fraction)
     while episode_index < number_of_episodes:
-        if number_of_episodes > 1:
+        if episode_index < decay_episodes:
             epsilon = epsilon_end + (epsilon_start - epsilon_end) * (
-                1.0 - float(episode_index) / float(number_of_episodes - 1)
+                1.0 - float(episode_index) / float(decay_episodes - 1)
             )
         else:
-            epsilon = epsilon_start
+            epsilon = epsilon_end
 
         block_size = 10
         block_index = int(episode_index / block_size)
@@ -247,7 +249,7 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 450000
+    number_of_episodes = 480000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
@@ -256,6 +258,7 @@ if __name__ == "__main__":
         seed_value=59,
         evaluation_interval=10000,
         evaluation_games=2000,
+        decay_fraction=0.60,
         log_csv_path=f"training_log_DMC_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_DMC_{number_of_episodes}_episodes.pt",
     )

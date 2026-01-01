@@ -126,7 +126,7 @@ def generate_episode_transitions(environment, q_network, epsilon, enemy_type):
 
         current_turn_counter = int(environment.game_state.status["turncounter"])
         if current_turn_counter != previous_turn_counter:
-            end_of_turn_reward = float(previous_turn_counter) * compute_end_of_turn_location_reward(
+            end_of_turn_reward = 0.25 * float(previous_turn_counter) * compute_end_of_turn_location_reward(
                 environment.game_state
             )
 
@@ -403,7 +403,7 @@ def train_dqn_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 200000
+    number_of_episodes = 210000
 
     results = train_dqn_with_logging(
         number_of_episodes=number_of_episodes,
@@ -415,11 +415,11 @@ if __name__ == "__main__":
         evaluation_games=2000,
         log_csv_path=f"training_log_DQN_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_DQN_{number_of_episodes}_episodes.pt",
-        replay_buffer_size=5000,
+        replay_buffer_size=10000,
         batch_size=32,
-        discount_factor=1.0,
-        updates_per_episode=1,
-        target_update_interval=2000,
+        discount_factor=0.99,
+        updates_per_episode=3,
+        target_update_interval=5000,
         gradient_clip_norm=1.0,
     )
 
