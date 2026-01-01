@@ -116,7 +116,7 @@ def train_deep_monte_carlo_with_logging(
     start_time_seconds = time.time()
 
     input_dimension = get_input_dimension()
-    q_network = QNetwork(input_dimension)
+    q_network = QNetwork(input_dimension, hidden_dimension=256)
     optimizer = optim.Adam(q_network.parameters(), lr=learning_rate)
     loss_function = nn.MSELoss()
 
@@ -249,16 +249,16 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 480000
+    number_of_episodes = 470000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=3e-4,
         epsilon_start=0.9,
         epsilon_end=0.05,
-        seed_value=59,
+        seed_value=66,
         evaluation_interval=10000,
         evaluation_games=2000,
-        decay_fraction=0.60,
+        decay_fraction=0.70,
         log_csv_path=f"training_log_DMC_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_DMC_{number_of_episodes}_episodes.pt",
     )
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     loaded_q_network = load_q_network(
         f"trained_q_network_DMC_{number_of_episodes}_episodes.pt",
         input_dimension=input_dimension,
-        hidden_dimension=512,
+        hidden_dimension=256,
     )
 
     final_eval_results = evaluate_against_random_opponent(
