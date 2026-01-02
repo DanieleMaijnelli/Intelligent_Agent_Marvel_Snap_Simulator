@@ -17,7 +17,7 @@ class QNetwork(nn.Module):
 
 
 class QNetworkA(nn.Module):
-    def __init__(self, input_dimension, bottleneck_dim=512, mid_dim=2048, dropout=0.1):
+    def __init__(self, input_dimension, bottleneck_dim=512, mid_dim=2048):
         super(QNetworkA, self).__init__()
 
         self.linear_layer_1 = nn.Linear(input_dimension, bottleneck_dim)
@@ -31,18 +31,14 @@ class QNetworkA(nn.Module):
 
         self.linear_layer_4 = nn.Linear(bottleneck_dim, 1)
 
-        self.dropout = nn.Dropout(dropout)
-
     def forward(self, state_action_tensor):
         x = self.linear_layer_1(state_action_tensor)
         x = self.layer_norm_1(x)
         x = torch.relu(x)
-        x = self.dropout(x)
 
         x = self.linear_layer_2(x)
         x = self.layer_norm_2(x)
         x = torch.relu(x)
-        x = self.dropout(x)
 
         x = self.linear_layer_3(x)
         x = self.layer_norm_3(x)
@@ -53,7 +49,7 @@ class QNetworkA(nn.Module):
 
 
 class QNetworkB(nn.Module):
-    def __init__(self, input_dimension, hidden_dim=512, num_hidden_layers=4, dropout=0.1):
+    def __init__(self, input_dimension, hidden_dim=512, num_hidden_layers=4):
         super(QNetworkB, self).__init__()
 
         assert num_hidden_layers >= 1
@@ -68,19 +64,16 @@ class QNetworkB(nn.Module):
             self.hidden_norms.append(nn.LayerNorm(hidden_dim))
 
         self.output_layer = nn.Linear(hidden_dim, 1)
-        self.dropout = nn.Dropout(dropout)
 
     def forward(self, state_action_tensor):
         x = self.input_layer(state_action_tensor)
         x = self.input_norm(x)
         x = torch.relu(x)
-        x = self.dropout(x)
 
         for layer, norm in zip(self.hidden_layers, self.hidden_norms):
             x = layer(x)
             x = norm(x)
             x = torch.relu(x)
-            x = self.dropout(x)
 
         x = self.output_layer(x)
         return x.squeeze(-1)
@@ -91,13 +84,13 @@ def save_q_network(q_network, file_path):
 
 
 def load_q_network(file_path, input_dimension, architecture="base", hidden_dimension=512,
-                   bottleneck_dim=512, mid_dim=2048, num_hidden_layers=4, dropout=0.1):
+                   bottleneck_dim=512, mid_dim=2048, num_hidden_layers=4):
     if architecture == "base":
         q_network = QNetwork(input_dimension, hidden_dimension)
     elif architecture == "A":
-        q_network = QNetworkA(input_dimension, bottleneck_dim=bottleneck_dim, mid_dim=mid_dim, dropout=dropout)
+        q_network = QNetworkA(input_dimension, bottleneck_dim=bottleneck_dim, mid_dim=mid_dim)
     elif architecture == "B":
-        q_network = QNetworkB(input_dimension, hidden_dim=hidden_dimension, num_hidden_layers=num_hidden_layers, dropout=dropout)
+        q_network = QNetworkB(input_dimension, hidden_dim=hidden_dimension, num_hidden_layers=num_hidden_layers, )
     else:
         raise ValueError(f"Unknown architecture: {architecture}")
 
@@ -105,4 +98,3 @@ def load_q_network(file_path, input_dimension, architecture="base", hidden_dimen
     q_network.load_state_dict(state_dictionary)
     q_network.eval()
     return q_network
-
