@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 from training.TrainingUtilityFunctions import *
-from training.TrainingNetwork import QNetwork, load_q_network, save_q_network
+from training.TrainingNetwork import QNetwork, QNetworkA, QNetworkB, load_q_network, save_q_network
 
 
 def generate_episode(environment, q_network, epsilon, enemy_type):
@@ -116,7 +116,7 @@ def train_deep_monte_carlo_with_logging(
     start_time_seconds = time.time()
 
     input_dimension = get_input_dimension()
-    q_network = QNetwork(input_dimension, hidden_dimension=256)
+    q_network = QNetworkA(input_dimension)
     optimizer = optim.Adam(q_network.parameters(), lr=learning_rate)
     loss_function = nn.MSELoss()
 
@@ -149,6 +149,7 @@ def train_deep_monte_carlo_with_logging(
             enemy_type = "Self-Play"
         else:
             enemy_type = "Random"
+        q_network.eval()
         (
             episode_ally_state_actions,
             episode_enemy_state_actions,
@@ -157,6 +158,7 @@ def train_deep_monte_carlo_with_logging(
             final_reward_ally,
             final_reward_enemy,
         ) = generate_episode(environment, q_network, epsilon, enemy_type)
+        q_network.train()
 
         training_state_action_list = []
         target_return_list = []
@@ -202,9 +204,11 @@ def train_deep_monte_carlo_with_logging(
 
         if evaluation_interval is not None and evaluation_interval > 0:
             if (episode_index + 1) % evaluation_interval == 0:
+                q_network.eval()
                 eval_results = evaluate_against_random_opponent(
                     q_network, evaluation_games, epsilon_agent=0.0
                 )
+                q_network.train()
                 elapsed_minutes = (time.time() - start_time_seconds) / 60.0
                 ally_win_rate = eval_results["ally_win_rate"]
                 enemy_win_rate = eval_results["enemy_win_rate"]
@@ -266,14 +270,15 @@ if __name__ == "__main__":
     trained_q_network = results["q_network"]
     print("Training finished.")
 
-    input_dimension = trained_q_network.linear_layer_1.in_features
+    input_dimension = get_input_dimension()
 
     loaded_q_network = load_q_network(
         f"trained_q_network_DMC_{number_of_episodes}_episodes.pt",
         input_dimension=input_dimension,
-        hidden_dimension=256,
+        architecture="A",
     )
 
+    loaded_q_network.eval()
     final_eval_results = evaluate_against_random_opponent(
         loaded_q_network,
         number_of_games=10000,
