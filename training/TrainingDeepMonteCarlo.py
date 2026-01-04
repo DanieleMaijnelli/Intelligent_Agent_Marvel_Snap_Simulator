@@ -253,13 +253,13 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 490000
+    number_of_episodes = 455000
     results = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
-        learning_rate=1e-4,
+        learning_rate=3e-5,
         epsilon_start=0.9,
         epsilon_end=0.05,
-        seed_value=64,
+        seed_value=94,
         evaluation_interval=10000,
         evaluation_games=2000,
         decay_fraction=0.70,
