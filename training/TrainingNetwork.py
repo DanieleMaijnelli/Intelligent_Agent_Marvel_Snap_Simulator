@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class QNetwork(nn.Module):
-    def __init__(self, input_dimension, hidden_dimension=768):
+    def __init__(self, input_dimension, hidden_dimension=512):
         super(QNetwork, self).__init__()
         self.linear_layer_1 = nn.Linear(input_dimension, hidden_dimension)
         self.linear_layer_2 = nn.Linear(hidden_dimension, hidden_dimension)
@@ -83,7 +83,7 @@ def save_q_network(q_network, file_path):
     torch.save(q_network.state_dict(), file_path)
 
 
-def load_q_network(file_path, input_dimension, architecture="base", hidden_dimension=768,
+def load_q_network(file_path, input_dimension, architecture="base", hidden_dimension=512,
                    bottleneck_dim=512, mid_dim=2048, num_hidden_layers=4):
     if architecture == "base":
         q_network = QNetwork(input_dimension, hidden_dimension)

@@ -63,7 +63,7 @@ def main():
 
     base_name = os.path.splitext(os.path.basename(csv_file_path))[0]
 
-    excluded_columns = {"loss", "episode", "tie_rate", "enemy_win_rate"}
+    excluded_columns = {"loss", "episode", "tie_rate", "enemy_win_rate", "final_reward_ally", "final_reward_enemy"}
 
     for column_name in column_name_list:
         if column_name in excluded_columns:
