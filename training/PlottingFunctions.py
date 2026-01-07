@@ -48,7 +48,7 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
 
 
 def main():
-    csv_file_path = "training_log_DMC_600000_episodes.csv"
+    csv_file_path = "training_log_DMC_800000_episodes.csv"
 
     plots_directory = "plots"
     os.makedirs(plots_directory, exist_ok=True)
