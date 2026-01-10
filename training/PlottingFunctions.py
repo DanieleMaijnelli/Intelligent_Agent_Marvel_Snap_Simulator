@@ -1,6 +1,31 @@
 import os
 import csv
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+
+def compute_moving_average(value_list, window_size):
+    smoothed_value_list = []
+    index_value = 0
+    while index_value < len(value_list):
+        start_index = index_value - window_size + 1
+        if start_index < 0:
+            start_index = 0
+
+        sum_value = 0.0
+        count_value = 0
+        inner_index = start_index
+        while inner_index <= index_value:
+            sum_value += float(value_list[inner_index])
+            count_value += 1
+            inner_index += 1
+
+        smoothed_value_list.append(sum_value / float(count_value))
+        index_value += 1
+
+    return smoothed_value_list
 
 
 def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
@@ -37,10 +62,26 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
     if len(episode_list) == 0:
         raise ValueError("No valid numeric data to plot.")
 
+    lower_csv_name = str(csv_file_path).lower()
+    lower_column_name = str(y_column_name).lower()
+
+    is_win_rate_plot = ("win rate" in lower_csv_name) or ("win_rate" in lower_column_name) or (
+            "win rate" in lower_column_name)
+
+    if is_win_rate_plot:
+        moving_average_window = 5
+        y_value_list = compute_moving_average(y_value_list, moving_average_window)
+
     plt.figure()
     plt.plot(episode_list, y_value_list)
     plt.xlabel("episode")
-    plt.ylabel(y_column_name)
+
+    if is_win_rate_plot:
+        plt.ylabel(y_column_name)
+        plt.ylim(40, 100)
+    else:
+        plt.ylabel(y_column_name)
+
     plt.title(y_column_name + " vs episode")
     plt.grid(True)
     plt.savefig(output_image_path, dpi=150, bbox_inches="tight")
