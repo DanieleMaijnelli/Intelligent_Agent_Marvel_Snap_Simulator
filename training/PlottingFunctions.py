@@ -82,7 +82,7 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
 
     if is_win_rate_plot:
         plt.ylabel(y_column_name)
-        plt.ylim(40, 100)
+        plt.ylim(40, 80)
     else:
         plt.ylabel(y_column_name)
 
