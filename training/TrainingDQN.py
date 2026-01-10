@@ -356,7 +356,7 @@ def train_dqn_with_logging(
 
         if evaluation_interval is not None and evaluation_interval > 0:
             if (episode_index + 1) % evaluation_interval == 0:
-                eval_results = evaluate_against_random_opponent(
+                eval_results = evaluate_against_chosen_opponent(
                     q_network, evaluation_games, epsilon_agent=0.0
                 )
                 elapsed_minutes = (time.time() - start_time_seconds) / 60.0
@@ -434,7 +434,7 @@ if __name__ == "__main__":
         hidden_dimension=512,
     )
 
-    final_eval_results = evaluate_against_random_opponent(
+    final_eval_results = evaluate_against_chosen_opponent(
         loaded_q_network,
         number_of_games=10000,
         epsilon_agent=0.0,

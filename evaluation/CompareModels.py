@@ -5,7 +5,7 @@ from training.TrainingNetwork import load_q_network
 from training.TrainingUtilityFunctions import format_csv_value
 from training.TrainingUtilityFunctions import get_input_dimension
 
-from training.TrainingDeepMonteCarlo import evaluate_against_random_opponent
+from training.TrainingDeepMonteCarlo import evaluate_against_chosen_opponent
 
 if __name__ == "__main__":
     episodes_list = [25000]
@@ -34,7 +34,7 @@ if __name__ == "__main__":
         )
 
         with torch.no_grad():
-            final_eval_results = evaluate_against_random_opponent(
+            final_eval_results = evaluate_against_chosen_opponent(
                 loaded_q_network,
                 number_of_games=number_of_games,
                 epsilon_agent=epsilon_agent,

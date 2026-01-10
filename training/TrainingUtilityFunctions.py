@@ -205,7 +205,7 @@ def choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon):
     return best_action, numpy.array(best_state_action_vector, dtype=numpy.float32)
 
 
-def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0.0, verbose=False):
+def evaluate_against_chosen_opponent(q_network, number_of_games, epsilon_agent=0.0, verbose=False, opponent_type="Random"):
     environment = SingleAgentTestEnvironment(verbose)
 
     ally_wins = 0
@@ -233,7 +233,10 @@ def evaluate_against_random_opponent(q_network, number_of_games, epsilon_agent=0
                     environment, q_network, True, epsilon_agent
                 )
             else:
-                action = choose_random_action(environment, False)
+                if opponent_type == "Random":
+                    action = choose_random_action(environment, False)
+                else:
+                    action, _ = choose_action_epsilon_greedy(environment, q_network, False, epsilon_agent)
 
             action_type, done = environment.step(action, is_ally)
 

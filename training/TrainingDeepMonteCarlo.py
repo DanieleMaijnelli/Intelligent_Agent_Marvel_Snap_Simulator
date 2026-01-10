@@ -204,7 +204,7 @@ def train_deep_monte_carlo_with_logging(
         if evaluation_interval is not None and evaluation_interval > 0:
             if (episode_index + 1) % evaluation_interval == 0:
                 q_network.eval()
-                eval_results = evaluate_against_random_opponent(
+                eval_results = evaluate_against_chosen_opponent(
                     q_network, evaluation_games, epsilon_agent=0.0
                 )
                 q_network.train()
@@ -278,7 +278,14 @@ if __name__ == "__main__":
     )
 
     loaded_q_network.eval()
-    final_eval_results = evaluate_against_random_opponent(
+    final_eval_results = evaluate_against_chosen_opponent(
+        loaded_q_network,
+        number_of_games=10000,
+        epsilon_agent=0.0,
+        verbose=False
+    )
+
+    final_eval_results_with_self = evaluate_against_chosen_opponent(
         loaded_q_network,
         number_of_games=10000,
         epsilon_agent=0.0,
@@ -286,4 +293,8 @@ if __name__ == "__main__":
     )
     print("Final evaluation vs random opponent:")
     for key, value in final_eval_results.items():
+        print(f"{key}: {format_csv_value(value)}")
+
+    print("Final evaluation vs self:")
+    for key, value in final_eval_results_with_self.items():
         print(f"{key}: {format_csv_value(value)}")
