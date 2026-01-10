@@ -5,7 +5,7 @@ from training.TrainingUtilityFunctions import *
 from training.TrainingNetwork import QNetwork, QNetworkA, QNetworkB, load_q_network, save_q_network
 
 
-def generate_episode(environment, q_network, epsilon, enemy_type):
+def generate_episode(environment, q_network, epsilon, episode_index, decay_episodes_enemy):
     environment.reset()
     episode_ally_state_actions = []
     episode_enemy_state_actions = []
@@ -15,6 +15,11 @@ def generate_episode(environment, q_network, epsilon, enemy_type):
 
     final_reward_ally = 0.0
     final_reward_enemy = 0.0
+
+    if episode_index >= decay_episodes_enemy:
+        epsilon_enemy = 0
+    else:
+        epsilon_enemy = 1.0 - float(episode_index) / float(decay_episodes_enemy - 1)
 
     done = False
     is_ally = True
@@ -37,22 +42,21 @@ def generate_episode(environment, q_network, epsilon, enemy_type):
             if action_type == "Passed":
                 is_ally = False
         else:
-            if enemy_type == "Self-Play":
-                action, state_action_vector = choose_action_epsilon_greedy(
-                    environment, q_network, is_ally, epsilon
-                )
-                action_type, done = environment.step(action, is_ally)
-                episode_enemy_state_actions.append(state_action_vector)
-                enemy_reward_list.append(0.0)
-                last_enemy_action_index_in_turn = len(enemy_reward_list) - 1
+            # if enemy_type == "Self-Play":
+            # action, state_action_vector = choose_action_epsilon_greedy(
+            #   environment, q_network, is_ally, epsilon
+            # )
+            # action_type, done = environment.step(action, is_ally)
+            # episode_enemy_state_actions.append(state_action_vector)
+            # enemy_reward_list.append(0.0)
+            # last_enemy_action_index_in_turn = len(enemy_reward_list) - 1
 
-                if action_type == "Passed":
-                    is_ally = True
-            else:
-                action = choose_random_action(environment, False)
-                action_type, done = environment.step(action, is_ally)
-                if action_type == "Passed":
-                    is_ally = True
+            # if action_type == "Passed":
+            #   is_ally = True
+            action, _ = choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon_enemy)
+            action_type, done = environment.step(action, is_ally)
+            if action_type == "Passed":
+                is_ally = True
 
         current_turn_counter = int(environment.game_state.status["turncounter"])
         if current_turn_counter != previous_turn_counter:
@@ -142,13 +146,8 @@ def train_deep_monte_carlo_with_logging(
         else:
             epsilon = epsilon_end
 
-        block_size = 10
-        block_index = int(episode_index / block_size)
+        decay_episodes_enemy = int(number_of_episodes * 0.5)
 
-        if block_index % 2 == 0:
-            enemy_type = "Self-Play"
-        else:
-            enemy_type = "Random"
         q_network.eval()
         (
             episode_ally_state_actions,
@@ -157,7 +156,7 @@ def train_deep_monte_carlo_with_logging(
             enemy_return_list,
             final_reward_ally,
             final_reward_enemy,
-        ) = generate_episode(environment, q_network, epsilon, enemy_type)
+        ) = generate_episode(environment, q_network, epsilon, episode_index, decay_episodes_enemy)
         q_network.train()
 
         training_state_action_list = []
@@ -258,8 +257,8 @@ if __name__ == "__main__":
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
         epsilon_start=0.9,
-        epsilon_end=0.05,
-        seed_value=7,
+        epsilon_end=0.01,
+        seed_value=14,
         evaluation_interval=20000,
         evaluation_games=3000,
         decay_fraction=0.35,
