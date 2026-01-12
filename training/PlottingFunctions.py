@@ -82,7 +82,7 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
 
     if is_win_rate_plot:
         plt.ylabel(y_column_name)
-        plt.ylim(55, 90)
+        plt.ylim(50, 100)
     else:
         plt.ylabel(y_column_name)
 
@@ -93,7 +93,7 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
 
 
 def main():
-    csv_file_path = "training_log_DMC_800000_episodes.csv"
+    csv_file_path = "training_log_DMC_2000000_episodes.csv"
 
     plots_directory = "plots"
     os.makedirs(plots_directory, exist_ok=True)
