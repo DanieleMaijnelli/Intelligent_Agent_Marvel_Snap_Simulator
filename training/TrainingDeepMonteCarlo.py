@@ -3,70 +3,6 @@ import torch.optim as optim
 import time
 from training.TrainingUtilityFunctions import *
 from training.TrainingNetwork import QNetwork, QNetworkA, QNetworkB, load_q_network, save_q_network
-import multiprocessing as multiprocessing
-import io
-
-
-def serialize_state_dictionary(state_dictionary):
-    memory_buffer = io.BytesIO()
-    torch.save(state_dictionary, memory_buffer)
-    return memory_buffer.getvalue()
-
-
-def deserialize_state_dictionary(state_dictionary_bytes):
-    memory_buffer = io.BytesIO(state_dictionary_bytes)
-    return torch.load(memory_buffer, map_location="cpu")
-
-
-def deep_monte_carlo_actor_process(actor_process_index, actor_task_queue, learner_result_queue, input_dimension,
-                                   seed_value, ):
-    if seed_value is not None:
-        set_global_seed(int(seed_value) + 1000 * int(actor_process_index))
-
-    environment = SingleAgentTestEnvironment()
-
-    q_network = QNetworkB(input_dimension)
-    q_network.eval()
-
-    while True:
-        task_dictionary = actor_task_queue.get()
-
-        if task_dictionary is None:
-            break
-
-        if "command" in task_dictionary and task_dictionary["command"] == "stop":
-            break
-
-        q_network_state_dictionary_bytes = task_dictionary["q_network_state_dictionary_bytes"]
-        epsilon = task_dictionary["epsilon"]
-        episode_index = task_dictionary["episode_index"]
-        decay_episodes_enemy = task_dictionary["decay_episodes_enemy"]
-
-        loaded_state_dictionary = deserialize_state_dictionary(q_network_state_dictionary_bytes)
-        q_network.load_state_dict(loaded_state_dictionary)
-        q_network.eval()
-
-        (
-            episode_ally_state_actions,
-            episode_enemy_state_actions,
-            ally_return_list,
-            enemy_return_list,
-            final_reward_ally,
-            final_reward_enemy,
-        ) = generate_episode(environment, q_network, epsilon, episode_index, decay_episodes_enemy)
-
-        learner_result_queue.put(
-            {
-                "actor_process_index": actor_process_index,
-                "episode_index": episode_index,
-                "episode_ally_state_actions": episode_ally_state_actions,
-                "episode_enemy_state_actions": episode_enemy_state_actions,
-                "ally_return_list": ally_return_list,
-                "enemy_return_list": enemy_return_list,
-                "final_reward_ally": final_reward_ally,
-                "final_reward_enemy": final_reward_enemy,
-            }
-        )
 
 
 def generate_episode(environment, q_network, epsilon, episode_index, decay_episodes_enemy):
@@ -81,9 +17,9 @@ def generate_episode(environment, q_network, epsilon, episode_index, decay_episo
     final_reward_enemy = 0.0
 
     if episode_index >= decay_episodes_enemy:
-        epsilon_enemy = 0
+        epsilon_enemy = 0.05
     else:
-        epsilon_enemy = 1.0 - float(episode_index) / float(decay_episodes_enemy - 1)
+        epsilon_enemy = 1.0 - float(episode_index) / float(decay_episodes_enemy)
 
     done = False
     is_ally = True
@@ -178,7 +114,6 @@ def train_deep_monte_carlo_with_logging(
     decay_fraction=0.5,
     log_csv_path=None,
     save_model_path=None,
-    number_of_total_processes=4
 ):
     if seed_value is not None:
         set_global_seed(seed_value)
@@ -201,32 +136,8 @@ def train_deep_monte_carlo_with_logging(
     if log_csv_path is not None:
         csv_file, csv_writer = create_training_csv_writer(log_csv_path)
 
-    multiprocessing_context = multiprocessing.get_context("spawn")
-    actor_task_queue = multiprocessing_context.Queue()
-    learner_result_queue = multiprocessing_context.Queue()
-
-    number_of_actor_processes = int(number_of_total_processes) - 1
-    actor_process_list = []
-
-    actor_process_index = 0
-    while actor_process_index < number_of_actor_processes:
-        actor_process = multiprocessing_context.Process(
-            target=deep_monte_carlo_actor_process,
-            args=(
-                actor_process_index,
-                actor_task_queue,
-                learner_result_queue,
-                input_dimension,
-                seed_value,
-            ),
-        )
-        actor_process.start()
-        actor_process_list.append(actor_process)
-        actor_process_index += 1
-
     episode_index = 0
     decay_episodes = int(number_of_episodes * decay_fraction)
-
     while episode_index < number_of_episodes:
         if episode_index < decay_episodes:
             epsilon = epsilon_end + (epsilon_start - epsilon_end) * (

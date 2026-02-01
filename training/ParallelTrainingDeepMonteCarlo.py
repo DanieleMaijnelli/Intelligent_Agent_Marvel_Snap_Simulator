@@ -359,7 +359,6 @@ def train_deep_monte_carlo_parallel_with_logging(
             episode_index += len(tasks_to_send)
 
     finally:
-        # Stop pulito degli actor
         stop_index = 0
         while stop_index < number_of_actor_processes:
             actor_task_queue.put({"command": "stop"})
