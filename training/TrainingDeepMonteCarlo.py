@@ -119,6 +119,7 @@ def train_deep_monte_carlo_with_logging(
     csv_writer = None
     if log_csv_path is not None:
         csv_file, csv_writer = create_training_csv_writer(log_csv_path)
+        csv_file.flush()
 
     episode_index = 0
     decay_episodes = int(number_of_episodes * decay_fraction)
@@ -207,6 +208,7 @@ def train_deep_monte_carlo_with_logging(
                         tie_rate,
                         deck_pair_ally_win_rate_value_list,
                     )
+                    csv_file.flush()
 
         episode_index += 1
 
