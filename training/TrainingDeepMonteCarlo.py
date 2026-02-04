@@ -42,17 +42,6 @@ def generate_episode(environment, q_network, epsilon, episode_index, decay_episo
             if action_type == "Passed":
                 is_ally = False
         else:
-            # if enemy_type == "Self-Play":
-            # action, state_action_vector = choose_action_epsilon_greedy(
-            #   environment, q_network, is_ally, epsilon
-            # )
-            # action_type, done = environment.step(action, is_ally)
-            # episode_enemy_state_actions.append(state_action_vector)
-            # enemy_reward_list.append(0.0)
-            # last_enemy_action_index_in_turn = len(enemy_reward_list) - 1
-
-            # if action_type == "Passed":
-            #   is_ally = True
             action, _ = choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon_enemy)
             action_type, done = environment.step(action, is_ally)
             if action_type == "Passed":
@@ -126,11 +115,6 @@ def train_deep_monte_carlo_with_logging(
 
     environment = SingleAgentTestEnvironment()
 
-    training_loss_history = []
-    ally_win_rate_history = []
-    enemy_win_rate_history = []
-    tie_rate_history = []
-
     csv_file = None
     csv_writer = None
     if log_csv_path is not None:
@@ -189,12 +173,7 @@ def train_deep_monte_carlo_with_logging(
             optimizer.step()
 
             loss_value_float = float(loss_value.item())
-            training_loss_history.append(loss_value_float)
 
-        ally_win_rate = ""
-        enemy_win_rate = ""
-        tie_rate = ""
-        elapsed_minutes = ""
         deck_pair_ally_win_rate_value_list = []
         deck_pair_value_index = 0
         while deck_pair_value_index < 16:
@@ -214,24 +193,20 @@ def train_deep_monte_carlo_with_logging(
                 tie_rate = eval_results["tie_rate"]
                 deck_pair_ally_win_rate_value_list = extract_deck_pair_ally_win_rate_list(eval_results)
 
-                ally_win_rate_history.append(ally_win_rate)
-                enemy_win_rate_history.append(enemy_win_rate)
-                tie_rate_history.append(tie_rate)
-
-        if csv_writer is not None:
-            write_training_csv_row(
-                csv_writer,
-                episode_index + 1,
-                elapsed_minutes,
-                epsilon,
-                loss_value_float,
-                final_reward_ally,
-                final_reward_enemy,
-                ally_win_rate,
-                enemy_win_rate,
-                tie_rate,
-                deck_pair_ally_win_rate_value_list,
-            )
+                if csv_writer is not None:
+                    write_training_csv_row(
+                        csv_writer,
+                        episode_index + 1,
+                        elapsed_minutes,
+                        epsilon,
+                        loss_value_float,
+                        final_reward_ally,
+                        final_reward_enemy,
+                        ally_win_rate,
+                        enemy_win_rate,
+                        tie_rate,
+                        deck_pair_ally_win_rate_value_list,
+                    )
 
         episode_index += 1
 
@@ -241,19 +216,12 @@ def train_deep_monte_carlo_with_logging(
     if save_model_path is not None:
         save_q_network(q_network, save_model_path)
 
-    results_dictionary = {
-        "q_network": q_network,
-        "training_loss_history": training_loss_history,
-        "ally_win_rate_history": ally_win_rate_history,
-        "enemy_win_rate_history": enemy_win_rate_history,
-        "tie_rate_history": tie_rate_history,
-    }
-    return results_dictionary
+    return q_network
 
 
 if __name__ == "__main__":
-    number_of_episodes = 2020000
-    results = train_deep_monte_carlo_with_logging(
+    number_of_episodes = 900000
+    network = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
         epsilon_start=0.9,
@@ -265,8 +233,6 @@ if __name__ == "__main__":
         log_csv_path=f"training_log_DMC_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_DMC_{number_of_episodes}_episodes.pt",
     )
-
-    trained_q_network = results["q_network"]
     print("Training finished.")
 
     input_dimension = get_input_dimension()
