@@ -342,19 +342,8 @@ def train_deep_monte_carlo_parallel_with_logging(
                     else:
                         epsilon_for_csv = epsilon_end
 
-                    write_training_csv_row(
-                        csv_writer,
-                        current_episode_index + 1,
-                        elapsed_minutes,
-                        epsilon_for_csv,
-                        loss_value_float,
-                        final_reward_ally,
-                        final_reward_enemy,
-                        ally_win_rate,
-                        enemy_win_rate,
-                        tie_rate,
-                        deck_pair_ally_win_rate_value_list,
-                    )
+                    write_training_csv_row(csv_writer, current_episode_index + 1, elapsed_minutes, epsilon_for_csv,
+                                           ally_win_rate, enemy_win_rate, tie_rate, deck_pair_ally_win_rate_value_list)
 
             episode_index += len(tasks_to_send)
 
@@ -384,7 +373,7 @@ def train_deep_monte_carlo_parallel_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 1300000
+    number_of_episodes = 900000
     results = train_deep_monte_carlo_parallel_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,

@@ -370,19 +370,8 @@ def train_dqn_with_logging(
                 tie_rate_history.append(tie_rate)
 
         if csv_writer is not None:
-            write_training_csv_row(
-                csv_writer,
-                episode_index + 1,
-                elapsed_minutes,
-                epsilon,
-                loss_value_float,
-                final_reward_ally,
-                final_reward_enemy,
-                ally_win_rate,
-                enemy_win_rate,
-                tie_rate,
-                deck_pair_ally_win_rate_value_list,
-            )
+            write_training_csv_row(csv_writer, episode_index + 1, elapsed_minutes, epsilon, ally_win_rate,
+                                   enemy_win_rate, tie_rate, deck_pair_ally_win_rate_value_list)
 
         episode_index += 1
 

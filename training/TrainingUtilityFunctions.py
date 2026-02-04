@@ -22,9 +22,6 @@ def create_training_csv_writer(log_csv_path):
         "episode",
         "elapsed_minutes",
         "epsilon",
-        "loss",
-        "final_reward_ally",
-        "final_reward_enemy",
         "ally_win_rate",
         "enemy_win_rate",
         "tie_rate",
@@ -41,6 +38,7 @@ def create_training_csv_writer(log_csv_path):
         ally_deck_number += 1
 
     csv_writer.writerow(header_row)
+    csv_file.flush()
     return csv_file, csv_writer
 
 
@@ -62,9 +60,6 @@ def write_training_csv_row(
     episode_number,
     elapsed_minutes,
     epsilon,
-    loss_value_float,
-    final_reward_ally,
-    final_reward_enemy,
     ally_win_rate,
     enemy_win_rate,
     tie_rate,
@@ -77,9 +72,6 @@ def write_training_csv_row(
                          episode_number,
                          elapsed_minutes,
                          epsilon,
-                         loss_value_float,
-                         final_reward_ally,
-                         final_reward_enemy,
                          ally_win_rate,
                          enemy_win_rate,
                          tie_rate,
