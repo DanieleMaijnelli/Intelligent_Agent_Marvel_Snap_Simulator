@@ -152,7 +152,7 @@ def train_deep_monte_carlo_with_logging(
     decay_fraction=0.5,
     log_csv_path=None,
     save_model_path=None,
-    n_of_actor_processes=5
+    n_of_actor_processes=10
 ):
     if seed_value is not None:
         set_global_seed(seed_value)
@@ -284,7 +284,7 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 900000
+    number_of_episodes = 950000
     network = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
