@@ -1,6 +1,6 @@
 import csv
-from environment.SingleAgentTestEnvironment import SingleAgentTestEnvironment
-from environment.TestUtilityFunctions import build_observation_with_chosen_action, get_legal_actions
+from environment.PlayerAgentEnvironment import PlayerAgentEnvironment
+from environment.EnvironmentUtilityFunctions import build_observation_with_chosen_action, get_legal_actions
 import random
 import torch
 import numpy
@@ -98,7 +98,7 @@ def format_csv_value(value_object):
 
 
 def get_input_dimension():
-    dummy_environment = SingleAgentTestEnvironment()
+    dummy_environment = PlayerAgentEnvironment()
     dummy_environment.reset()
     dummy_action = (-1, -1)
     dummy_state_action_vector = build_observation_with_chosen_action(
@@ -197,7 +197,7 @@ def choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon):
 
 
 def evaluate_against_chosen_opponent(q_network, number_of_games, epsilon_agent=0.0, verbose=False, opponent_type="Random"):
-    environment = SingleAgentTestEnvironment(verbose)
+    environment = PlayerAgentEnvironment(verbose)
 
     ally_wins = 0
     enemy_wins = 0

@@ -3,14 +3,14 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import EvalCallback
 from gameManager import GameState
-from environment.SnapAgentEnvironmentMarvelSnapSimulator import MarvelSnapSingleSnapAgentEnv
+from environment.SnapAgentEnvironment import SnapAgentEnvironment
 
 SEED = 43
 
 
 def make_env():
     def _init():
-        environment = MarvelSnapSingleSnapAgentEnv(GameState(verbose=False))
+        environment = SnapAgentEnvironment(GameState(verbose=False))
         return Monitor(environment)
 
     return _init
@@ -19,7 +19,7 @@ def make_env():
 def train_dqn(total_timesteps=200_000):
     vectorized_environment = make_vec_env(make_env(), n_envs=4, seed=SEED)
 
-    evaluation_environment = Monitor(MarvelSnapSingleSnapAgentEnv(GameState(verbose=False)))
+    evaluation_environment = Monitor(SnapAgentEnvironment(GameState(verbose=False)))
 
     eval_callback = EvalCallback(
         evaluation_environment,

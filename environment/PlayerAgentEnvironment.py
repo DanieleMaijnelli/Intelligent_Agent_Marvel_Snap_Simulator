@@ -1,7 +1,7 @@
 from gameManager import GameState
 
 
-class SingleAgentTestEnvironment:
+class PlayerAgentEnvironment:
     def __init__(self, verbose=False):
         self.game_state = GameState(verbose=verbose)
 

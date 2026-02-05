@@ -279,7 +279,7 @@ def train_dqn_with_logging(
 
     optimizer = optim.Adam(q_network.parameters(), lr=learning_rate)
 
-    environment = SingleAgentTestEnvironment()
+    environment = PlayerAgentEnvironment()
 
     replay_buffer = ReplayBuffer(replay_buffer_size)
 

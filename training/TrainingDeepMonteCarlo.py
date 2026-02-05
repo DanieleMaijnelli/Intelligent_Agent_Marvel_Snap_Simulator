@@ -108,7 +108,7 @@ def train_deep_monte_carlo_with_logging(
     optimizer = optim.Adam(q_network.parameters(), lr=learning_rate)
     loss_function = nn.MSELoss()
 
-    environment = SingleAgentTestEnvironment()
+    environment = PlayerAgentEnvironment()
 
     csv_file = None
     csv_writer = None
@@ -214,10 +214,10 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 2000000
+    number_of_episodes = 2000001
     network = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
-        learning_rate=5e-5,
+        learning_rate=1e-4,
         epsilon_start=0.9,
         epsilon_end=0.01,
         seed_value=14,
