@@ -204,7 +204,7 @@ def train_deep_monte_carlo_with_logging(
         q_network.eval()
         q_network_state_dictionary_bytes = serialize_state_dictionary(q_network.state_dict())
 
-        episodes_per_actor = 1000
+        episodes_per_actor = 500
 
         for i in range(n_of_actor_processes):
             tasks_queue.put({
