@@ -154,8 +154,6 @@ def train_deep_monte_carlo_with_logging(
             training_state_action_list.append(state_action_vector)
             target_return_list.append(target_return)
 
-        loss_value_float = 0.0
-
         if len(training_state_action_list) > 0:
             state_action_array = numpy.stack(training_state_action_list).astype(
                 numpy.float32
@@ -171,8 +169,6 @@ def train_deep_monte_carlo_with_logging(
             optimizer.zero_grad()
             loss_value.backward()
             optimizer.step()
-
-            loss_value_float = float(loss_value.item())
 
         deck_pair_ally_win_rate_value_list = []
         deck_pair_value_index = 0
@@ -199,9 +195,6 @@ def train_deep_monte_carlo_with_logging(
                         episode_index + 1,
                         elapsed_minutes,
                         epsilon,
-                        loss_value_float,
-                        final_reward_ally,
-                        final_reward_enemy,
                         ally_win_rate,
                         enemy_win_rate,
                         tie_rate,
