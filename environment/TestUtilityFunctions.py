@@ -18,8 +18,8 @@ CARD_EMBEDDING_CACHE = {}
 LOCATION_EMBEDDING_CACHE = {}
 EMPTY_EMBEDDING = list(embed_text(""))
 EMBEDDING_LENGTH = len(EMPTY_EMBEDDING)
-EMPTY_HAND_SLOT = [0.0, 0.0, 0.0, 0.0] + [0.0] * EMBEDDING_LENGTH
-EMPTY_BOARD_SLOT = [0.0, 0.0, 0.0] + [0.0] * EMBEDDING_LENGTH
+EMPTY_HAND_SLOT = [0.0, 0.0, 0.0] + [0.0] * EMBEDDING_LENGTH
+EMPTY_BOARD_SLOT = [0.0, 0.0] + [0.0] * EMBEDDING_LENGTH
 
 
 def get_card_embedding(card_object):
@@ -71,11 +71,10 @@ def build_hand_observation(game_state, is_ally, action_flag):
                 played_card_flag = 1
             else:
                 played_card_flag = 0
-            card_index_value = float(Decks.CLASS_TO_INDEX[card_object.__class__])
             current_power_value = float(card_object.cur_power)
             current_cost_value = float(card_object.cur_cost)
             embedding_vector = get_card_embedding(card_object)
-            hand_card_slot = [played_card_flag, card_index_value, current_power_value, current_cost_value]
+            hand_card_slot = [played_card_flag, current_power_value, current_cost_value]
             hand_card_slot.extend(embedding_vector)
         else:
             hand_card_slot = EMPTY_HAND_SLOT
@@ -125,11 +124,10 @@ def build_played_cards_observation(game_state, is_ally):
             while slot_index < 4:
                 if slot_index < len(card_list):
                     card_object = card_list[slot_index]
-                    card_index_value = float(Decks.CLASS_TO_INDEX.get(card_object.__class__, 0))
                     current_power_value = float(card_object.cur_power)
                     current_cost_value = float(card_object.cur_cost)
                     embedding_vector = get_card_embedding(card_object)
-                    card_slot = [card_index_value, current_power_value, current_cost_value]
+                    card_slot = [current_power_value, current_cost_value]
                     card_slot.extend(embedding_vector)
                 else:
                     card_slot = list(EMPTY_BOARD_SLOT)
