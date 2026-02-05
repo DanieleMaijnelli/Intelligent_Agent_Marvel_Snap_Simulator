@@ -5,7 +5,7 @@ from training.TrainingUtilityFunctions import *
 from training.TrainingNetwork import QNetwork, QNetworkA, QNetworkB, load_q_network, save_q_network
 
 
-def generate_episode(environment, q_network, epsilon, episode_index, decay_episodes_enemy):
+def generate_episode(environment, q_network, epsilon, epsilon_enemy):
     environment.reset()
     episode_ally_state_actions = []
     episode_enemy_state_actions = []
@@ -15,11 +15,6 @@ def generate_episode(environment, q_network, epsilon, episode_index, decay_episo
 
     final_reward_ally = 0.0
     final_reward_enemy = 0.0
-
-    if episode_index >= decay_episodes_enemy:
-        epsilon_enemy = 0.05
-    else:
-        epsilon_enemy = 1.0 - float(episode_index) / float(decay_episodes_enemy)
 
     done = False
     is_ally = True
@@ -132,6 +127,10 @@ def train_deep_monte_carlo_with_logging(
             epsilon = epsilon_end
 
         decay_episodes_enemy = int(number_of_episodes * 0.5)
+        if episode_index >= decay_episodes_enemy:
+            epsilon_enemy = 0.05
+        else:
+            epsilon_enemy = 1.0 - float(episode_index) / float(decay_episodes_enemy)
 
         q_network.eval()
         (
@@ -141,7 +140,7 @@ def train_deep_monte_carlo_with_logging(
             enemy_return_list,
             final_reward_ally,
             final_reward_enemy,
-        ) = generate_episode(environment, q_network, epsilon, episode_index, decay_episodes_enemy)
+        ) = generate_episode(environment, q_network, epsilon, epsilon_enemy)
         q_network.train()
 
         training_state_action_list = []
@@ -222,7 +221,7 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 900000
+    number_of_episodes = 2000000
     network = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
@@ -257,7 +256,8 @@ if __name__ == "__main__":
         loaded_q_network,
         number_of_games=10000,
         epsilon_agent=0.0,
-        verbose=False
+        verbose=False,
+        opponent_type="Self"
     )
     print("Final evaluation vs random opponent:")
     for key, value in final_eval_results.items():
