@@ -152,7 +152,7 @@ def train_deep_monte_carlo_with_logging(
     decay_fraction=0.5,
     log_csv_path=None,
     save_model_path=None,
-    n_of_actor_processes=10
+    n_of_actor_processes=5
 ):
     if seed_value is not None:
         set_global_seed(seed_value)
@@ -204,7 +204,7 @@ def train_deep_monte_carlo_with_logging(
         q_network.eval()
         q_network_state_dictionary_bytes = serialize_state_dictionary(q_network.state_dict())
 
-        episodes_per_actor = 200
+        episodes_per_actor = 1000
 
         for i in range(n_of_actor_processes):
             tasks_queue.put({
@@ -284,7 +284,7 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 950000
+    number_of_episodes = 940000
     network = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
