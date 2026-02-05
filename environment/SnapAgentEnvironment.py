@@ -8,6 +8,14 @@ class SnapAgentEnvironment:
     def __init__(self, verbose=False):
         self.game_state = GameState(verbose=verbose)
 
+    def snap_randomly(self, is_ally: bool, snap_probability):
+        game_state = self.game_state
+        if random.random() < snap_probability:
+            if is_ally:
+                game_state.snap(True)
+            else:
+                game_state.snap(False)
+
     def build_basic_observation_snap_agent(self, is_ally):
         status_dictionary = self.game_state.status
         feature_list = [float(status_dictionary["turncounter"]) / 7.0, float(status_dictionary["cubes"]) / 8.0,
@@ -43,6 +51,8 @@ class SnapAgentEnvironment:
         self.game_state.reset()
 
     def step(self, action):
+
+    '''def step(self, action):
         terminated_flag = False
         truncated_flag = False
         reward = 0.0
@@ -69,4 +79,4 @@ class SnapAgentEnvironment:
             snap_randomly(self.game_state, False, 0.15)
         observation_array = get_observation_array_snap_agent(self.game_state, self.number_of_cards)
         info_dictionary = {}
-        return observation_array, reward, terminated_flag, truncated_flag, info_dictionary
+        return observation_array, reward, terminated_flag, truncated_flag, info_dictionary'''

@@ -73,7 +73,7 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
         while index_value < len(y_value_list):
             y_value_list[index_value] = y_value_list[index_value] * 100.0
             index_value += 1
-        moving_average_window = 5
+        moving_average_window = 7
         y_value_list = compute_moving_average(y_value_list, moving_average_window)
 
     plt.figure()
@@ -82,7 +82,7 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
 
     if is_win_rate_plot:
         plt.ylabel(y_column_name)
-        plt.ylim(50, 100)
+        plt.ylim(55, 85)
     else:
         plt.ylabel(y_column_name)
 
