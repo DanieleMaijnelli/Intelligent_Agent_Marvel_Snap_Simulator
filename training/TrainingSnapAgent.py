@@ -156,7 +156,7 @@ def train_snap_agent_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 20000
+    number_of_episodes = 100000
     network = train_snap_agent_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         epsilon_end=0.01,
         seed_value=45,
         evaluation_interval=5000,
-        evaluation_games=250,
+        evaluation_games=1000,
         decay_fraction=0.5,
         log_csv_path=f"training_log_snap_DMC_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_snap_DMC_{number_of_episodes}_episodes.pt",

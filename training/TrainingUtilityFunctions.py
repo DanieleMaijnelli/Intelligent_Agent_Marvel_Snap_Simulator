@@ -27,7 +27,7 @@ def create_snap_training_csv_writer(log_csv_path):
         "ally_win_rate",
         "enemy_win_rate",
         "tie_rate",
-        "Average_Cubes_Won",
+        "average_cubes_won",
     ]
 
     csv_writer.writerow(header_row)
