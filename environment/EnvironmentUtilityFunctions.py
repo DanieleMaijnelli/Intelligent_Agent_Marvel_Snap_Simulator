@@ -18,8 +18,8 @@ CARD_EMBEDDING_CACHE = {}
 LOCATION_EMBEDDING_CACHE = {}
 EMPTY_EMBEDDING = list(embed_text(""))
 EMBEDDING_LENGTH = len(EMPTY_EMBEDDING)
-EMPTY_HAND_SLOT = [0.0, 0.0, 0.0, 0.0] + [0.0] * EMBEDDING_LENGTH
-EMPTY_BOARD_SLOT = [0.0, 0.0, 0.0] + [0.0] * EMBEDDING_LENGTH
+EMPTY_HAND_SLOT = [0.0, 0.0, 0.0] + [0.0] * EMBEDDING_LENGTH
+EMPTY_BOARD_SLOT = [0.0, 0.0] + [0.0] * EMBEDDING_LENGTH
 
 
 def get_card_embedding(card_object):
@@ -71,11 +71,10 @@ def build_hand_observation(game_state, is_ally, action_flag):
                 played_card_flag = 1
             else:
                 played_card_flag = 0
-            card_index_value = float(Decks.CLASS_TO_INDEX[card_object.__class__])
             current_power_value = float(card_object.cur_power)
             current_cost_value = float(card_object.cur_cost)
             embedding_vector = get_card_embedding(card_object)
-            hand_card_slot = [played_card_flag, card_index_value, current_power_value, current_cost_value]
+            hand_card_slot = [played_card_flag, current_power_value, current_cost_value]
             hand_card_slot.extend(embedding_vector)
         else:
             hand_card_slot = EMPTY_HAND_SLOT
@@ -125,11 +124,10 @@ def build_played_cards_observation(game_state, is_ally):
             while slot_index < 4:
                 if slot_index < len(card_list):
                     card_object = card_list[slot_index]
-                    card_index_value = float(Decks.CLASS_TO_INDEX.get(card_object.__class__, 0))
                     current_power_value = float(card_object.cur_power)
                     current_cost_value = float(card_object.cur_cost)
                     embedding_vector = get_card_embedding(card_object)
-                    card_slot = [card_index_value, current_power_value, current_cost_value]
+                    card_slot = [current_power_value, current_cost_value]
                     card_slot.extend(embedding_vector)
                 else:
                     card_slot = list(EMPTY_BOARD_SLOT)
@@ -149,6 +147,41 @@ def build_observation_with_chosen_action(game_state, is_ally, action_tuple):
     feature_list.extend(locations_observation)
     feature_list.extend(hand_observation)
     feature_list.extend(played_cards_observation)
+    return numpy.array(feature_list, dtype=numpy.float32)
+
+
+def build_basic_observation_snap_agent(game_state, is_ally):
+    status_dictionary = game_state.status
+    feature_list = [float(status_dictionary["turncounter"]) / 7.0, float(status_dictionary["cubes"]) / 8.0,
+                    float(status_dictionary["tempcubes"]) / 8.0]
+
+    if is_ally:
+        feature_list.append(float(status_dictionary["allyenergy"]) / 10.0)
+        feature_list.append(1.0 if status_dictionary["allypriority"] else 0.0)
+        feature_list.append(1.0 if status_dictionary["allysnapped"] else 0.0)
+        feature_list.append(1.0 if status_dictionary["enemysnapped"] else 0.0)
+    else:
+        feature_list.append(float(status_dictionary["enemyenergy"]) / 10.0)
+        feature_list.append(1.0 if not status_dictionary["allypriority"] else 0.0)
+        feature_list.append(1.0 if status_dictionary["enemysnapped"] else 0.0)
+        feature_list.append(1.0 if status_dictionary["allysnapped"] else 0.0)
+
+    return feature_list
+
+
+def build_observation_snap_agent_with_chosen_action(game_state, is_ally, action):
+    feature_list = []
+    one_hot = [0.0, 0.0, 0.0]
+    one_hot[action.value] = 1.0
+    basic_observation = build_basic_observation_snap_agent(game_state, is_ally)
+    locations_observation = build_locations_observation(game_state, is_ally, -1)
+    hand_observation = build_hand_observation(game_state, is_ally, -1)
+    played_cards_observation = build_played_cards_observation(game_state, is_ally)
+    feature_list.extend(basic_observation)
+    feature_list.extend(locations_observation)
+    feature_list.extend(hand_observation)
+    feature_list.extend(played_cards_observation)
+    feature_list.extend(one_hot)
     return numpy.array(feature_list, dtype=numpy.float32)
 
 

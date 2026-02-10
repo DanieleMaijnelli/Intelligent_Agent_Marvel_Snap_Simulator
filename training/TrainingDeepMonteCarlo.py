@@ -2,26 +2,18 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 from training.TrainingUtilityFunctions import *
-from training.TrainingNetwork import QNetwork, QNetworkA, QNetworkB, load_q_network, save_q_network
+from training.TrainingNetwork import QNetworkB, load_q_network, save_q_network
 
 
 def generate_episode(environment, q_network, epsilon, epsilon_enemy):
     environment.reset()
     episode_ally_state_actions = []
-    episode_enemy_state_actions = []
-
     ally_reward_list = []
-    enemy_reward_list = []
-
-    final_reward_ally = 0.0
-    final_reward_enemy = 0.0
 
     done = False
     is_ally = True
 
     last_ally_action_index_in_turn = None
-    last_enemy_action_index_in_turn = None
-
     previous_turn_counter = int(environment.game_state.status["turncounter"])
 
     while not done:
@@ -50,40 +42,26 @@ def generate_episode(environment, q_network, epsilon, epsilon_enemy):
             if last_ally_action_index_in_turn is not None:
                 ally_reward_list[last_ally_action_index_in_turn] += end_of_turn_reward
 
-            if last_enemy_action_index_in_turn is not None:
-                enemy_reward_list[last_enemy_action_index_in_turn] -= end_of_turn_reward
-
             last_ally_action_index_in_turn = None
-            last_enemy_action_index_in_turn = None
             previous_turn_counter = current_turn_counter
 
         if done:
             winner = environment.game_state.passStatus["winner"]
             if winner == "Ally":
                 final_reward_ally = 2.0
-                final_reward_enemy = -2.0
             elif winner == "Enemy":
                 final_reward_ally = -2.0
-                final_reward_enemy = 2.0
             else:
                 final_reward_ally = 0.0
-                final_reward_enemy = 0.0
 
             if len(ally_reward_list) > 0:
                 ally_reward_list[len(ally_reward_list) - 1] += final_reward_ally
-            if len(enemy_reward_list) > 0:
-                enemy_reward_list[len(enemy_reward_list) - 1] += final_reward_enemy
 
     ally_return_list = compute_monte_carlo_returns(ally_reward_list, discount_factor=1.0)
-    enemy_return_list = compute_monte_carlo_returns(enemy_reward_list, discount_factor=1.0)
 
     return (
         episode_ally_state_actions,
-        episode_enemy_state_actions,
-        ally_return_list,
-        enemy_return_list,
-        final_reward_ally,
-        final_reward_enemy,
+        ally_return_list
     )
 
 
@@ -135,11 +113,7 @@ def train_deep_monte_carlo_with_logging(
         q_network.eval()
         (
             episode_ally_state_actions,
-            episode_enemy_state_actions,
-            ally_return_list,
-            enemy_return_list,
-            final_reward_ally,
-            final_reward_enemy,
+            ally_return_list
         ) = generate_episode(environment, q_network, epsilon, epsilon_enemy)
         q_network.train()
 
@@ -147,10 +121,6 @@ def train_deep_monte_carlo_with_logging(
         target_return_list = []
 
         for state_action_vector, target_return in zip(episode_ally_state_actions, ally_return_list):
-            training_state_action_list.append(state_action_vector)
-            target_return_list.append(target_return)
-
-        for state_action_vector, target_return in zip(episode_enemy_state_actions, enemy_return_list):
             training_state_action_list.append(state_action_vector)
             target_return_list.append(target_return)
 
@@ -214,7 +184,7 @@ def train_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 2000001
+    number_of_episodes = 2000
     network = train_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=1e-4,
@@ -241,14 +211,14 @@ if __name__ == "__main__":
     final_eval_results = evaluate_against_chosen_opponent(
         loaded_q_network,
         number_of_games=10000,
-        epsilon_agent=0.0,
+        epsilon_agent=0.01,
         verbose=False
     )
 
     final_eval_results_with_self = evaluate_against_chosen_opponent(
         loaded_q_network,
         number_of_games=10000,
-        epsilon_agent=0.0,
+        epsilon_agent=0.01,
         verbose=False,
         opponent_type="Self"
     )

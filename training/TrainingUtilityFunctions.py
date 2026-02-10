@@ -1,6 +1,8 @@
 import csv
 from environment.PlayerAgentEnvironment import PlayerAgentEnvironment
-from environment.EnvironmentUtilityFunctions import build_observation_with_chosen_action, get_legal_actions
+from environment.SnapAgentEnvironment import Action, SnapAgentEnvironment
+from environment.EnvironmentUtilityFunctions import build_observation_with_chosen_action, get_legal_actions, \
+    build_observation_snap_agent_with_chosen_action
 import random
 import torch
 import numpy
@@ -12,6 +14,24 @@ def set_global_seed(seed_value):
     torch.manual_seed(seed_value)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed_value)
+
+
+def create_snap_training_csv_writer(log_csv_path):
+    csv_file = open(log_csv_path, "w", newline="")
+    csv_writer = csv.writer(csv_file)
+
+    header_row = [
+        "episode",
+        "elapsed_minutes",
+        "epsilon",
+        "ally_win_rate",
+        "enemy_win_rate",
+        "tie_rate",
+        "Average_Cubes_Won",
+    ]
+
+    csv_writer.writerow(header_row)
+    return csv_file, csv_writer
 
 
 def create_training_csv_writer(log_csv_path):
@@ -85,6 +105,38 @@ def write_training_csv_row(
     csv_writer.writerow(formatted_row_value_list)
 
 
+def write_snap_training_csv_row(
+    csv_writer,
+    episode_number,
+    elapsed_minutes,
+    epsilon,
+    ally_win_rate,
+    enemy_win_rate,
+    tie_rate,
+    average_cubes_won
+):
+    if csv_writer is None:
+        return
+
+    row_value_list = [
+        episode_number,
+        elapsed_minutes,
+        epsilon,
+        ally_win_rate,
+        enemy_win_rate,
+        tie_rate,
+        average_cubes_won
+    ]
+
+    formatted_row_value_list = []
+    value_index = 0
+    while value_index < len(row_value_list):
+        formatted_row_value_list.append(format_csv_value(row_value_list[value_index]))
+        value_index += 1
+
+    csv_writer.writerow(formatted_row_value_list)
+
+
 def format_csv_value(value_object):
     if value_object == "":
         return ""
@@ -103,6 +155,15 @@ def get_input_dimension():
     dummy_action = (-1, -1)
     dummy_state_action_vector = build_observation_with_chosen_action(
         dummy_environment.game_state, True, dummy_action
+    )
+    return len(dummy_state_action_vector)
+
+
+def get_snap_input_dimension():
+    dummy_environment = PlayerAgentEnvironment()
+    dummy_environment.reset()
+    dummy_state_action_vector = build_observation_snap_agent_with_chosen_action(
+        dummy_environment.game_state, True, Action.NOTHING
     )
     return len(dummy_state_action_vector)
 
@@ -196,7 +257,53 @@ def choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon):
     return best_action, numpy.array(best_state_action_vector, dtype=numpy.float32)
 
 
-def evaluate_against_chosen_opponent(q_network, number_of_games, epsilon_agent=0.0, verbose=False, opponent_type="Random"):
+def choose_snap_action_epsilon_greedy(environment, snap_q_network, is_ally, epsilon):
+    game_state = environment.game_state
+    if (game_state.status["allysnapped"] and is_ally) or (game_state.status["enemysnapped"] and (not is_ally)):
+        legal_actions_list = (Action.NOTHING, Action.RETREAT)
+    else:
+        legal_actions_list = (Action.NOTHING, Action.RETREAT, Action.SNAP)
+
+    if random.random() < epsilon:
+        if len(legal_actions_list) >= 3:
+            r = random.random()
+            if r < 0.89:
+                chosen_action = Action.NOTHING
+            elif r < 0.90:
+                chosen_action = Action.RETREAT
+            else:
+                chosen_action = Action.SNAP
+        else:
+            r = random.random()
+            chosen_action = Action.NOTHING if r < 0.99 else Action.RETREAT
+
+        state_action_vector = build_observation_snap_agent_with_chosen_action(
+            game_state, is_ally, chosen_action
+        )
+        return chosen_action, numpy.array(state_action_vector, dtype=numpy.float32)
+
+    state_action_vector_list = []
+    for action_tuple in legal_actions_list:
+        state_action_vector = build_observation_snap_agent_with_chosen_action(
+            game_state, is_ally, action_tuple
+        )
+        state_action_vector_list.append(state_action_vector)
+
+    state_action_array = numpy.stack(state_action_vector_list).astype(numpy.float32)
+    state_action_tensor = torch.from_numpy(state_action_array)
+
+    with torch.no_grad():
+        q_value_tensor = snap_q_network(state_action_tensor)
+
+    best_action_index = int(torch.argmax(q_value_tensor).item())
+    best_action = legal_actions_list[best_action_index]
+    best_state_action_vector = state_action_vector_list[best_action_index]
+
+    return best_action, numpy.array(best_state_action_vector, dtype=numpy.float32)
+
+
+def evaluate_against_chosen_opponent(q_network, number_of_games, epsilon_agent=0.01, verbose=False,
+                                     opponent_type="Random"):
     environment = PlayerAgentEnvironment(verbose)
 
     ally_wins = 0
@@ -269,5 +376,52 @@ def evaluate_against_chosen_opponent(q_network, number_of_games, epsilon_agent=0
 
     compute_individual_decks_win_rate(deck_pair_ally_win_count_matrix, deck_pair_total_game_count_matrix,
                                       results_dictionary)
+
+    return results_dictionary
+
+
+def evaluate_snap_agent(player_q_network, snap_q_network, number_of_games):
+    environment = SnapAgentEnvironment(player_q_network)
+
+    ally_wins = 0
+    enemy_wins = 0
+    ties = 0
+    cubes_won = 0.0
+
+    game_index = 0
+    while game_index < number_of_games:
+        environment.reset()
+        done = False
+
+        while not done:
+            action, _ = choose_snap_action_epsilon_greedy(
+                environment, snap_q_network, True, 0.0
+            )
+            done = environment.step(action)
+
+        winner = environment.game_state.passStatus["winner"]
+        if winner == "Ally":
+            ally_wins += 1
+            cubes_won += environment.game_state.status["cubes"]
+        elif winner == "Enemy":
+            enemy_wins += 1
+            cubes_won -= environment.game_state.status["cubes"]
+        else:
+            ties += 1
+
+        game_index += 1
+
+    total_games = float(number_of_games)
+    ally_win_rate = ally_wins / total_games
+    enemy_win_rate = enemy_wins / total_games
+    tie_rate = ties / total_games
+    average_cubes_won = cubes_won / total_games
+
+    results_dictionary = {
+        "ally_win_rate": ally_win_rate,
+        "enemy_win_rate": enemy_win_rate,
+        "tie_rate": tie_rate,
+        "average_cubes_won": average_cubes_won
+    }
 
     return results_dictionary
