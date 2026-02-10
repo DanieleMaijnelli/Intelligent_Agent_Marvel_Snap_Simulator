@@ -1,6 +1,5 @@
 import random
 from environment.PlayerAgentEnvironment import PlayerAgentEnvironment
-from training.TrainingUtilityFunctions import choose_action_epsilon_greedy
 from enum import Enum
 
 
@@ -26,6 +25,7 @@ class SnapAgentEnvironment:
                 game_state.snap(False)
 
     def execute_player_turn(self, is_ally: bool):
+        from training.TrainingUtilityFunctions import choose_action_epsilon_greedy
         player_action_type = None
         while player_action_type != "Passed":
             player_action, state_action_vector = choose_action_epsilon_greedy(
