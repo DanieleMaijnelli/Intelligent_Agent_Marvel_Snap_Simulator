@@ -49,6 +49,6 @@ class SnapAgentEnvironment:
             done = self.game_state.game_end
 
         if not done:
-            self.snap_randomly(False, 0.15)
+            self.snap_randomly(False, 0.10)
 
         return done

@@ -156,13 +156,13 @@ def train_snap_agent_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 500000
+    number_of_episodes = 600000
     network = train_snap_agent_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
         epsilon_start=0.99,
         epsilon_end=0.01,
-        seed_value=45,
+        seed_value=40,
         evaluation_interval=20000,
         evaluation_games=3000,
         decay_fraction=0.5,
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     final_eval_results = evaluate_snap_agent(
         player_q_network,
         snap_q_network,
-        number_of_games=1000
+        number_of_games=10000
     )
 
     print("Final evaluation:")
