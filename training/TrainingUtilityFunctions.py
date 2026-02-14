@@ -267,9 +267,9 @@ def choose_snap_action_epsilon_greedy(environment, snap_q_network, is_ally, epsi
     if random.random() < epsilon:
         if len(legal_actions_list) >= 3:
             r = random.random()
-            if r < 0.80:
+            if r < 0.88:
                 chosen_action = Action.NOTHING
-            elif r < 0.82:
+            elif r < 0.90:
                 chosen_action = Action.RETREAT
             else:
                 chosen_action = Action.SNAP
