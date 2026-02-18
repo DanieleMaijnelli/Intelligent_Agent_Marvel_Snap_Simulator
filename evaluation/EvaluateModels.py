@@ -9,6 +9,7 @@ from training.TrainingDeepMonteCarlo import evaluate_against_chosen_opponent
 
 import csv
 
+
 def create_full_matchup_eval_csv_writer(csv_path, num_decks=6):
     csv_file = open(csv_path, "w", newline="")
     csv_writer = csv.writer(csv_file)
@@ -134,10 +135,9 @@ if __name__ == "__main__":
 
     evaluate_6_tests_to_csv(
         loaded_q_network,
-        csv_path="evaluation_DMC_2000000_episodes.csv",
+        csv_path="model_evaluation_DMC_2000000_episodes.csv",
         number_of_games=10000,
         epsilon_agent=0.01,
         verbose=False,
         num_decks=6,
     )
-

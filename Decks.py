@@ -95,9 +95,9 @@ deck_5 = [
 deck_6 = [
     "Ironfist",
     "Kraven",
-    "Multipleman",
+    "Vulture",
     "Doctorstrange",
-    "Cloak",
+    "Lizard",
     "Whitequeen",
     "Heimdall",
     "Bishop",
