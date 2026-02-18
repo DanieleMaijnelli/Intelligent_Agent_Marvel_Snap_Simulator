@@ -171,9 +171,9 @@ def get_snap_input_dimension():
 def compute_individual_decks_win_rate(deck_pair_ally_win_count_matrix, deck_pair_total_game_count_matrix,
                                       results_dictionary):
     ally_deck_number = 1
-    while ally_deck_number <= 4:
+    while ally_deck_number <= 6:
         enemy_deck_number = 1
-        while enemy_deck_number <= 4:
+        while enemy_deck_number <= 6:
             ally_deck_index = ally_deck_number - 1
             enemy_deck_index = enemy_deck_number - 1
 
@@ -225,6 +225,58 @@ def choose_random_action(environment, is_ally):
     game_state = environment.game_state
     legal_actions_list = get_legal_actions(game_state, is_ally)
     return random.choice(legal_actions_list)
+
+
+def choose_greedy_action(environment, is_ally: bool):
+    game_state = environment.game_state
+    legal_actions_list = get_legal_actions(game_state, is_ally)
+
+    playable_actions_list = []
+    for action_tuple in legal_actions_list:
+        if action_tuple != (-1, -1):
+            playable_actions_list.append(action_tuple)
+
+    if len(playable_actions_list) == 0:
+        chosen_action = (-1, -1)
+        return chosen_action
+
+    if random.random() < 0.01:
+        chosen_action = random.choice(legal_actions_list)
+        return chosen_action
+
+    status_dictionary = game_state.status
+    location_dictionary = game_state.locationList
+    hand = status_dictionary["allyhand"] if is_ally else status_dictionary["enemyhand"]
+
+    best_action = None
+    best_diff = None
+    best_power = None
+
+    action_index = 0
+    while action_index < len(playable_actions_list):
+        hand_index, location_index = playable_actions_list[action_index]
+
+        location_key = "location" + str(location_index + 1)
+        location = location_dictionary[location_key]
+
+        if is_ally:
+            my_power = int(location.alliesPower)
+            enemy_power = int(location.enemiesPower)
+        else:
+            my_power = int(location.enemiesPower)
+            enemy_power = int(location.alliesPower)
+
+        diff = abs(my_power - enemy_power)
+        card_power = int(hand[hand_index].cur_power)
+
+        if (best_action is None) or (diff < best_diff) or (diff == best_diff and card_power > best_power):
+            best_action = (hand_index, location_index)
+            best_diff = diff
+            best_power = card_power
+
+        action_index += 1
+
+    return best_action
 
 
 def choose_action_epsilon_greedy(environment, q_network, is_ally, epsilon):
@@ -303,21 +355,17 @@ def choose_snap_action_epsilon_greedy(environment, snap_q_network, is_ally, epsi
 
 
 def evaluate_against_chosen_opponent(q_network, number_of_games, epsilon_agent=0.01, verbose=False,
-                                     opponent_type="Random"):
-    environment = PlayerAgentEnvironment(verbose)
+                                     opponent_type="Random", agent_deck_type=0):
+    environment = PlayerAgentEnvironment(verbose, agent_deck_type)
 
     ally_wins = 0
     enemy_wins = 0
     ties = 0
 
-    deck_pair_total_game_count_matrix = []
-    deck_pair_ally_win_count_matrix = []
+    NUM_DECKS = 6
 
-    deck_index_row = 0
-    while deck_index_row < 4:
-        deck_pair_total_game_count_matrix.append([0, 0, 0, 0])
-        deck_pair_ally_win_count_matrix.append([0, 0, 0, 0])
-        deck_index_row += 1
+    deck_pair_total_game_count_matrix = [[0] * NUM_DECKS for _ in range(NUM_DECKS)]
+    deck_pair_ally_win_count_matrix = [[0] * NUM_DECKS for _ in range(NUM_DECKS)]
 
     game_index = 0
     while game_index < number_of_games:
@@ -333,6 +381,8 @@ def evaluate_against_chosen_opponent(q_network, number_of_games, epsilon_agent=0
             else:
                 if opponent_type == "Random":
                     action = choose_random_action(environment, False)
+                elif opponent_type == "Greedy":
+                    action = choose_greedy_action(environment, False)
                 else:
                     action, _ = choose_action_epsilon_greedy(environment, q_network, False, epsilon_agent)
 
@@ -380,8 +430,8 @@ def evaluate_against_chosen_opponent(q_network, number_of_games, epsilon_agent=0
     return results_dictionary
 
 
-def evaluate_snap_agent(player_q_network, snap_q_network, number_of_games):
-    environment = SnapAgentEnvironment(player_q_network)
+def evaluate_snap_agent(player_q_network, snap_q_network, number_of_games, agent_deck_type=0):
+    environment = SnapAgentEnvironment(player_q_network, agent_deck_type=agent_deck_type)
 
     ally_wins = 0
     enemy_wins = 0

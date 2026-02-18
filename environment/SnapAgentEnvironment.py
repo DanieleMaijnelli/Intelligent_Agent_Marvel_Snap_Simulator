@@ -10,9 +10,9 @@ class Action(Enum):
 
 
 class SnapAgentEnvironment:
-    def __init__(self, player_network):
+    def __init__(self, player_network, agent_deck_type=0):
         self.player_network = player_network
-        self.player_agent_environment = PlayerAgentEnvironment()
+        self.player_agent_environment = PlayerAgentEnvironment(ally_deck_type=agent_deck_type)
         self.game_state = self.player_agent_environment.game_state
         self.player_network.eval()
 
@@ -49,6 +49,7 @@ class SnapAgentEnvironment:
             done = self.game_state.game_end
 
         if not done:
-            self.snap_randomly(False, 0.10)
+            snap_probability = float(self.game_state.status["turncounter"]) * 0.03
+            self.snap_randomly(False, snap_probability)
 
         return done

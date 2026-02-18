@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 class GameState:
-    def __init__(self, verbose: bool = True):
+    def __init__(self, verbose: bool = True, ally_deck_type=0):
         self.game = {
             "game_id": "",
             "winner": "None",
@@ -18,6 +18,7 @@ class GameState:
         self.ally_deck_number = None
         self.enemy_deck_number = None
         self.verbose = verbose
+        self.ally_decks = ally_deck_type
         self.version = '1.1.0'
         self.game_id = ''
         self.exit = False
@@ -179,8 +180,14 @@ class GameState:
                 i += 1
 
     def gameStart(self):
-        ally_deck_classes, ally_deck_number = Decks.form_random_basic_deck()
-        enemy_deck_classes, enemy_deck_number = Decks.form_random_basic_deck()
+        if (self.ally_decks == 0):
+            ally_deck_classes, ally_deck_number = Decks.form_random_training_deck()
+        elif (self.ally_decks == 1):
+            ally_deck_classes, ally_deck_number = Decks.form_hybrid_deck()
+        else:
+            ally_deck_classes, ally_deck_number = Decks.form_new_deck()
+
+        enemy_deck_classes, enemy_deck_number = Decks.form_random_training_deck()
         self.ally_deck_number = ally_deck_number
         self.enemy_deck_number = enemy_deck_number
         self.game_id = str(generate(size=10))

@@ -77,13 +77,43 @@ deck_4 = [
     "Devildinosaur"
 ]
 
+deck_5 = [
+    "Squirrelgirl",
+    "Mistersinister",
+    "Cable",
+    "Ironheart",
+    "Nova",
+    "Agent13",
+    "Heimdall",
+    "Bishop",
+    "Forge",
+    "Iceman",
+    "Okoye",
+    "Nakia"
+]
+
+deck_6 = [
+    "Ironfist",
+    "Kraven",
+    "Multipleman",
+    "Doctorstrange",
+    "Cloak",
+    "Whitequeen",
+    "Heimdall",
+    "Bishop",
+    "Forge",
+    "Iceman",
+    "Mantis",
+    "Okoye"
+]
+
 
 def form_random_deck():
     deck = random.sample(ALL_CARDS, 12)
     return deck
 
 
-def form_random_basic_deck():
+def form_random_training_deck():
     basic_decks = [deck_1, deck_2, deck_3, deck_4]
 
     idx0 = random.randrange(len(basic_decks))
@@ -94,7 +124,32 @@ def form_random_basic_deck():
     return deck, deck_number
 
 
-'''for i in range(10):
-    deck, _ = form_random_basic_deck()
+def form_hybrid_deck():
+    hybrid_deck = deck_5
+    deck_number = 5
+
+    deck = [cls for cls in ALL_CARDS if cls.__name__ in hybrid_deck]
+    return deck, deck_number
+
+
+def form_new_deck():
+    new_deck = deck_6
+    deck_number = 6
+
+    deck = [cls for cls in ALL_CARDS if cls.__name__ in new_deck]
+    return deck, deck_number
+
+
+'''
+for i in range(10):
+    deck, _ = form_random_training_deck()
     print(deck)
-    print(len(deck))'''
+    print(len(deck))
+
+try_deck, _ = form_hybrid_deck()
+test_deck, _ = form_new_deck()
+print(try_deck)
+print(len(try_deck))
+print(test_deck)
+print(len(test_deck))
+'''

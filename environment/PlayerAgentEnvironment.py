@@ -2,8 +2,8 @@ from gameManager import GameState
 
 
 class PlayerAgentEnvironment:
-    def __init__(self, verbose=False):
-        self.game_state = GameState(verbose=verbose)
+    def __init__(self, verbose=False, ally_deck_type=0):
+        self.game_state = GameState(verbose=verbose, ally_deck_type=ally_deck_type)
 
     def reset(self):
         self.game_state.reset()
