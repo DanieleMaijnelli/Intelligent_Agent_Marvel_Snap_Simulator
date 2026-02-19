@@ -5,6 +5,43 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+import numpy as np
+import pandas as pd
+
+
+def _gaussian_kernel(sigma, radius=6):
+    x = np.arange(-radius, radius + 1)
+    k = np.exp(-(x ** 2) / (2 * sigma ** 2))
+    return k / k.sum()
+
+
+def plot_cube_distributions(csv_path, out_png_path, sigma=1.0):
+    df = pd.read_csv(csv_path)
+
+    bins = np.arange(-8.5, 8.6, 1.0)
+    centers = (bins[:-1] + bins[1:]) / 2.0
+
+    kernel = _gaussian_kernel(sigma=sigma, radius=6)
+
+    plt.figure(figsize=(10, 6))
+
+    for checkpoint in ["start", "mid", "end"]:
+        x = df.loc[df["checkpoint"] == checkpoint, "cubes_net"].to_numpy(dtype=float)
+
+        hist, _ = np.histogram(x, bins=bins, density=True)  # densità/probabilità
+        smooth = np.convolve(hist, kernel, mode="same")
+
+        plt.plot(centers, smooth, label=checkpoint)
+
+    plt.xlabel("Cubes net per game")
+    plt.ylabel("Probability density (smoothed)")
+    plt.title("Distribution of cubes won: start vs mid vs end")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(out_png_path, dpi=200)
+    plt.close()
+
 
 def compute_moving_average(value_list, window_size):
     smoothed_value_list = []
@@ -66,7 +103,7 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
     lower_column_name = str(y_column_name).lower()
 
     is_win_rate_plot = ("win rate" in lower_csv_name) or ("win_rate" in lower_column_name) or (
-            "win rate" in lower_column_name)
+        "win rate" in lower_column_name)
 
     if is_win_rate_plot:
         index_value = 0

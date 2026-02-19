@@ -475,3 +475,45 @@ def evaluate_snap_agent(player_q_network, snap_q_network, number_of_games, agent
     }
 
     return results_dictionary
+
+
+def evaluate_cube_samples(player_q_network, snap_q_network, number_of_games):
+    environment = SnapAgentEnvironment(player_q_network)
+
+    samples = []
+    for game_index in range(number_of_games):
+        environment.reset()
+        done = False
+        while not done:
+            action, _ = choose_snap_action_epsilon_greedy(environment, snap_q_network, True, 0.0)
+            done = environment.step(action)
+
+        winner = environment.game_state.passStatus["winner"]
+        cubes = float(environment.game_state.status["cubes"])
+
+        if winner == "Ally":
+            cubes_net = cubes
+        elif winner == "Enemy":
+            cubes_net = -cubes
+        else:
+            cubes_net = 0.0
+
+        samples.append((game_index, cubes, winner, cubes_net))
+
+    return samples
+
+
+def append_cube_samples_to_csv(csv_path, checkpoint, episode, samples):
+    try:
+        with open(csv_path, "r"):
+            file_exists = True
+    except FileNotFoundError:
+        file_exists = False
+
+    with open(csv_path, "a", newline="") as f:
+        w = csv.writer(f)
+        if not file_exists:
+            w.writerow(["checkpoint", "episode", "game_index", "cubes_stake", "winner", "cubes_net"])
+
+        for (game_index, cubes, winner, cubes_net) in samples:
+            w.writerow([checkpoint, episode, game_index, cubes, winner, cubes_net])

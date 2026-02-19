@@ -80,6 +80,10 @@ def train_snap_agent_deep_monte_carlo_with_logging(
     episode_index = 0
     decay_episodes = int(number_of_episodes * decay_fraction)
 
+    snap_q_network.eval()
+    samples = evaluate_cube_samples(player_q_network, snap_q_network, number_of_games=5000)
+    append_cube_samples_to_csv("snap_agent_cubes_per_match.csv", "start", 0, samples)
+
     while episode_index < number_of_episodes:
         if episode_index < decay_episodes:
             epsilon = epsilon_end + (epsilon_start - epsilon_end) * (
@@ -89,6 +93,11 @@ def train_snap_agent_deep_monte_carlo_with_logging(
             epsilon = epsilon_end
 
         snap_q_network.eval()
+
+        if episode_index == 750000:
+            samples = evaluate_cube_samples(player_q_network, snap_q_network, number_of_games=5000)
+            append_cube_samples_to_csv("snap_agent_cubes_per_match.csv", "mid", 750000, samples)
+
         (
             episode_ally_state_actions,
             ally_return_list
@@ -146,6 +155,9 @@ def train_snap_agent_deep_monte_carlo_with_logging(
 
         episode_index += 1
 
+    samples = evaluate_cube_samples(player_q_network, snap_q_network, number_of_games=5000)
+    append_cube_samples_to_csv("snap_agent_cubes_per_match.csv", "end", 1500000, samples)
+
     if csv_file is not None:
         csv_file.close()
 
@@ -156,7 +168,7 @@ def train_snap_agent_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 1520000
+    number_of_episodes = 1500005
     network = train_snap_agent_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
@@ -165,7 +177,7 @@ if __name__ == "__main__":
         seed_value=89,
         evaluation_interval=20000,
         evaluation_games=3000,
-        decay_fraction=0.9,
+        decay_fraction=0.7,
         log_csv_path=f"training_log_snap_DMC_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_snap_DMC_{number_of_episodes}_episodes.pt",
     )
