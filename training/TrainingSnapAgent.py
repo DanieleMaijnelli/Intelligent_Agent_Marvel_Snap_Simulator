@@ -162,10 +162,10 @@ if __name__ == "__main__":
         learning_rate=5e-5,
         epsilon_start=0.99,
         epsilon_end=0.01,
-        seed_value=40,
+        seed_value=89,
         evaluation_interval=20000,
         evaluation_games=3000,
-        decay_fraction=0.7,
+        decay_fraction=0.9,
         log_csv_path=f"training_log_snap_DMC_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_snap_DMC_{number_of_episodes}_episodes.pt",
     )

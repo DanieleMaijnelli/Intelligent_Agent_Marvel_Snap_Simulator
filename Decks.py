@@ -84,7 +84,7 @@ deck_5 = [
     "Ironheart",
     "Nova",
     "Agent13",
-    "Heimdall",
+    "Spiderwoman",
     "Bishop",
     "Forge",
     "Iceman",
@@ -93,17 +93,17 @@ deck_5 = [
 ]
 
 deck_6 = [
-    "Sunspot",
+    "Nakia",
     "Scorpion",
-    "Starlord",
+    "Jubilee",
     "Korg",
     "Lizard",
     "Whitequeen",
     "Americachavez",
     "Bishop",
+    "Spiderwoman",
+    "Gamora",
     "Forge",
-    "Iceman",
-    "Mantis",
     "Okoye"
 ]
 
