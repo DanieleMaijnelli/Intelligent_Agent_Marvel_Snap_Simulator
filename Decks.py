@@ -93,13 +93,13 @@ deck_5 = [
 ]
 
 deck_6 = [
-    "Ironfist",
-    "Kraven",
-    "Vulture",
-    "Doctorstrange",
+    "Sunspot",
+    "Scorpion",
+    "Starlord",
+    "Korg",
     "Lizard",
     "Whitequeen",
-    "Heimdall",
+    "Americachavez",
     "Bishop",
     "Forge",
     "Iceman",
