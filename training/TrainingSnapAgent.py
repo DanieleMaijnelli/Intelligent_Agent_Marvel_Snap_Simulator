@@ -82,7 +82,7 @@ def train_snap_agent_deep_monte_carlo_with_logging(
 
     snap_q_network.eval()
     samples = evaluate_cube_samples(player_q_network, snap_q_network, number_of_games=5000)
-    append_cube_samples_to_csv("snap_agent_cubes_per_match.csv", "start", 0, samples)
+    append_cube_samples_to_csv("snap_agent_cubes_per_match_final.csv", "untrained", 0, samples)
 
     while episode_index < number_of_episodes:
         if episode_index < decay_episodes:
@@ -94,9 +94,17 @@ def train_snap_agent_deep_monte_carlo_with_logging(
 
         snap_q_network.eval()
 
-        if episode_index == 750000:
+        if episode_index == 20000:
             samples = evaluate_cube_samples(player_q_network, snap_q_network, number_of_games=5000)
-            append_cube_samples_to_csv("snap_agent_cubes_per_match.csv", "mid", 750000, samples)
+            append_cube_samples_to_csv("snap_agent_cubes_per_match_final.csv", "start", 20000, samples)
+
+        if episode_index == 500000:
+            samples = evaluate_cube_samples(player_q_network, snap_q_network, number_of_games=5000)
+            append_cube_samples_to_csv("snap_agent_cubes_per_match_final.csv", "oneThird", 500000, samples)
+
+        if episode_index == 1000000:
+            samples = evaluate_cube_samples(player_q_network, snap_q_network, number_of_games=5000)
+            append_cube_samples_to_csv("snap_agent_cubes_per_match_final.csv", "twoThird", 1000000, samples)
 
         (
             episode_ally_state_actions,
@@ -155,8 +163,9 @@ def train_snap_agent_deep_monte_carlo_with_logging(
 
         episode_index += 1
 
+    snap_q_network.eval()
     samples = evaluate_cube_samples(player_q_network, snap_q_network, number_of_games=5000)
-    append_cube_samples_to_csv("snap_agent_cubes_per_match.csv", "end", 1500000, samples)
+    append_cube_samples_to_csv("snap_agent_cubes_per_match_final.csv", "end", 1500000, samples)
 
     if csv_file is not None:
         csv_file.close()
@@ -168,16 +177,16 @@ def train_snap_agent_deep_monte_carlo_with_logging(
 
 
 if __name__ == "__main__":
-    number_of_episodes = 1500005
+    number_of_episodes = 1500010
     network = train_snap_agent_deep_monte_carlo_with_logging(
         number_of_episodes=number_of_episodes,
         learning_rate=5e-5,
         epsilon_start=0.99,
         epsilon_end=0.01,
-        seed_value=89,
+        seed_value=35,
         evaluation_interval=20000,
         evaluation_games=3000,
-        decay_fraction=0.7,
+        decay_fraction=0.8,
         log_csv_path=f"training_log_snap_DMC_{number_of_episodes}_episodes.csv",
         save_model_path=f"trained_q_network_snap_DMC_{number_of_episodes}_episodes.pt",
     )
