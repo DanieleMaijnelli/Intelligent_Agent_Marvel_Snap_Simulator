@@ -10,9 +10,10 @@ class Action(Enum):
 
 
 class SnapAgentEnvironment:
-    def __init__(self, player_network, agent_deck_type=0):
+    def __init__(self, player_network, agent_deck_type=0, enemy_type="Random"):
         self.player_network = player_network
         self.player_agent_environment = PlayerAgentEnvironment(ally_deck_type=agent_deck_type)
+        self.enemy_type = enemy_type
         self.game_state = self.player_agent_environment.game_state
         self.player_network.eval()
 
@@ -35,7 +36,8 @@ class SnapAgentEnvironment:
 
     def reset(self):
         self.player_agent_environment.reset()
-        self.snap_randomly(False, 0.01)
+        if self.enemy_type == "Random":
+            self.snap_randomly(False, 0.01)
 
     def step(self, action):
         if action == Action.RETREAT:
@@ -49,7 +51,19 @@ class SnapAgentEnvironment:
             done = self.game_state.game_end
 
         if not done:
-            snap_probability = float(self.game_state.status["turncounter"]) * 0.03
-            self.snap_randomly(False, snap_probability)
+            if self.enemy_type == "Random":
+                snap_probability = float(self.game_state.status["turncounter"]) * 0.03
+                self.snap_randomly(False, snap_probability)
+            else:
+                turn_counter = int(self.game_state.status["turncounter"])
+                maximum_turns = int(self.game_state.status["maxturns"])
+
+                if turn_counter == maximum_turns:
+                    winner = self.game_state.checkWinner()
+
+                    if winner == "Enemy":
+                        self.game_state.snap(False)
+                    elif winner == "Ally":
+                        self.game_state.retreat(False)
 
         return done

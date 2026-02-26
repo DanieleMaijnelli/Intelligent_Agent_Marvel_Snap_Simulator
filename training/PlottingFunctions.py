@@ -15,29 +15,97 @@ def _gaussian_kernel(sigma, radius=6):
     return k / k.sum()
 
 
-def plot_cube_distributions(csv_path, out_png_path, sigma=1.0):
+def _load_snap_cube_samples_csv(csv_path):
     df = pd.read_csv(csv_path)
+
+    lower_cols = [str(c).strip().lower() for c in df.columns]
+    if ("checkpoint" not in lower_cols) and (len(df.columns) >= 6):
+        df = pd.read_csv(
+            csv_path,
+            header=None,
+            names=["checkpoint", "episode", "sample_idx", "cubes_abs", "winner", "cubes_net"],
+        )
+
+    return df
+
+
+def _find_column(df, candidate_names):
+    col_map = {str(c).strip().lower(): c for c in df.columns}
+    for name in candidate_names:
+        if name.lower() in col_map:
+            return col_map[name.lower()]
+    return None
+
+
+def _ensure_cubes_net_column(df):
+    cubes_net_col = _find_column(df, ["cubes_net", "net_cubes", "cube_net", "net_cube"])
+    if cubes_net_col is not None:
+        return pd.to_numeric(df[cubes_net_col], errors="coerce")
+
+    winner_col = _find_column(df, ["winner", "winner_name", "match_winner"])
+    cubes_abs_col = _find_column(df, ["cubes_abs", "cubes", "cube_amount", "cube_value"])
+
+    if winner_col is not None and cubes_abs_col is not None:
+        cubes_abs = pd.to_numeric(df[cubes_abs_col], errors="coerce")
+        winner = df[winner_col].astype(str).str.strip().str.lower()
+        sign = np.where(winner.isin(["enemy", "opponent"]), -1.0, 1.0)
+        return cubes_abs * sign
+
+    raise ValueError(
+        "Impossibile trovare 'cubes_net' e non riesco a ricostruirlo da 'winner' + 'cubes_abs'."
+    )
+
+
+def plot_cube_distributions_snap(
+    csv_path,
+    out_png_path,
+    sigma=1.0,
+    checkpoints_order=("untrained", "start", "oneThird", "twoThird", "end"),
+):
+    df = _load_snap_cube_samples_csv(csv_path)
+
+    checkpoint_col = _find_column(df, ["checkpoint", "stage", "label"])
+    if checkpoint_col is None:
+        raise ValueError("Colonna checkpoint non trovata.")
+
+    cubes_net = _ensure_cubes_net_column(df)
+
+    df = df.copy()
+    df["_cubes_net_plot"] = cubes_net
+    df["_checkpoint_plot"] = df[checkpoint_col].astype(str).str.strip()
+
+    df = df.dropna(subset=["_cubes_net_plot"])
+    if df.empty:
+        raise ValueError("Nessun dato valido per la distribuzione dei cubi.")
 
     bins = np.arange(-8.5, 8.6, 1.0)
     centers = (bins[:-1] + bins[1:]) / 2.0
-
     kernel = _gaussian_kernel(sigma=sigma, radius=6)
 
     plt.figure(figsize=(10, 6))
 
-    for checkpoint in ["start", "mid", "end"]:
-        x = df.loc[df["checkpoint"] == checkpoint, "cubes_net"].to_numpy(dtype=float)
+    present_checkpoints = list(pd.unique(df["_checkpoint_plot"]))
+    ordered = [c for c in checkpoints_order if c in present_checkpoints]
+    ordered += [c for c in present_checkpoints if c not in ordered]
 
-        hist, _ = np.histogram(x, bins=bins, density=True)  # densità/probabilità
+    for checkpoint in ordered:
+        x = df.loc[df["_checkpoint_plot"] == checkpoint, "_cubes_net_plot"].to_numpy(dtype=float)
+        if x.size == 0:
+            continue
+
+        hist, _ = np.histogram(x, bins=bins, density=False)
+        hist = hist.astype(float) / float(hist.sum())
+
         smooth = np.convolve(hist, kernel, mode="same")
+        plt.plot(centers, smooth, label=f"{checkpoint}")
 
-        plt.plot(centers, smooth, label=checkpoint)
-
-    plt.xlabel("Cubes net per game")
-    plt.ylabel("Probability density (smoothed)")
-    plt.title("Distribution of cubes won: start vs mid vs end")
-    plt.legend()
+    plt.axvline(0.0, linestyle="--", alpha=0.5)
+    plt.xlabel("Cubi ottenuti per partita(valori negativi = cubi persi, valori positivi = cubi vinti)")
+    plt.ylabel("Probabilità (appiattita)")
+    plt.title("Distribuzione di cubi vinti o persi calcolata su più valutazioni")
+    plt.xticks(np.arange(-8, 9, 1))
     plt.grid(True, alpha=0.3)
+    plt.legend()
     plt.tight_layout()
     plt.savefig(out_png_path, dpi=200)
     plt.close()
@@ -105,12 +173,20 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
     is_win_rate_plot = ("win rate" in lower_csv_name) or ("win_rate" in lower_column_name) or (
         "win rate" in lower_column_name)
 
+    is_average_cubes_plot = (
+        lower_column_name == "average_cubes_won"
+        or "average_cubes_won" in lower_column_name
+    )
+
     if is_win_rate_plot:
         index_value = 0
         while index_value < len(y_value_list):
             y_value_list[index_value] = y_value_list[index_value] * 100.0
             index_value += 1
-        moving_average_window = 7
+        moving_average_window = 9
+        y_value_list = compute_moving_average(y_value_list, moving_average_window)
+    elif is_average_cubes_plot:
+        moving_average_window = 9
         y_value_list = compute_moving_average(y_value_list, moving_average_window)
 
     plt.figure()
@@ -119,7 +195,10 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
 
     if is_win_rate_plot:
         plt.ylabel(y_column_name)
-        plt.ylim(50, 90)
+        plt.ylim(40, 60)
+    elif is_average_cubes_plot:
+        plt.ylabel(y_column_name)
+        plt.ylim(0.2, 0.9)
     else:
         plt.ylabel(y_column_name)
 
@@ -130,36 +209,49 @@ def plot_training_csv_metric(csv_file_path, y_column_name, output_image_path):
 
 
 def main():
-    csv_file_path = "training_log_DMC_2000000_episodes.csv"
-
     plots_directory = "plots"
     os.makedirs(plots_directory, exist_ok=True)
 
-    with open(csv_file_path, "r", newline="", encoding="utf-8") as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        column_name_list = list(csv_reader.fieldnames or [])
+    plot_cube_distributions_snap(
+        csv_path="snap_agent_cubes_per_match.csv",
+        out_png_path=os.path.join(plots_directory, "snap_agent_cubes_distribution.png"),
+        sigma=1.0,
+        checkpoints_order=("start", "mid", "end"),
+    )
 
-    if len(column_name_list) == 0:
-        print("CSV vuoto o senza header.")
-        return
+    print("Saved:", os.path.join(plots_directory, "snap_agent_cubes_distribution.png"))
 
-    base_name = os.path.splitext(os.path.basename(csv_file_path))[0]
 
-    excluded_columns = {"loss", "episode", "tie_rate", "enemy_win_rate", "final_reward_ally", "final_reward_enemy"}
+'''
+csv_file_path = "training_log_snap_DMC_1500005_episodes.csv"
 
-    for column_name in column_name_list:
-        if column_name in excluded_columns:
-            continue
+plots_directory = "plots"
+os.makedirs(plots_directory, exist_ok=True)
 
-        safe_column_name = column_name.replace("/", "_").replace("\\", "_").replace(":", "_")
-        output_image_path = os.path.join(plots_directory, base_name + "__" + safe_column_name + ".png")
+with open(csv_file_path, "r", newline="", encoding="utf-8") as csv_file:
+    csv_reader = csv.DictReader(csv_file)
+    column_name_list = list(csv_reader.fieldnames or [])
 
-        try:
-            plot_training_csv_metric(csv_file_path, column_name, output_image_path)
-            print("Saved:", output_image_path)
-        except ValueError:
-            print("Skipped (no valid data):", column_name)
+if len(column_name_list) == 0:
+    print("CSV vuoto o senza header.")
+    return
 
+base_name = os.path.splitext(os.path.basename(csv_file_path))[0]
+
+excluded_columns = {"loss", "episode", "tie_rate", "enemy_win_rate", "final_reward_ally", "final_reward_enemy"}
+
+for column_name in column_name_list:
+    if column_name in excluded_columns:
+        continue
+
+    safe_column_name = column_name.replace("/", "_").replace("\\", "_").replace(":", "_")
+    output_image_path = os.path.join(plots_directory, base_name + "__" + safe_column_name + ".png")
+
+    try:
+        plot_training_csv_metric(csv_file_path, column_name, output_image_path)
+        print("Saved:", output_image_path)
+    except ValueError:
+        print("Skipped (no valid data):", column_name)'''
 
 if __name__ == "__main__":
     main()
